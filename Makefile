@@ -22,7 +22,7 @@ plugin:
 
 
 install:
-	mkdir -p ~/Library/Audio/Plugin-Ins/Vamp
+	mkdir -p ~/Library/Audio/Plug-Ins/Vamp
 	cp lib-osx/mazurka-plugins.dylib ~/Library/Audio/Plug-Ins/Vamp/
 
 
