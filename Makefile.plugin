@@ -1,0 +1,93 @@
+##
+## Programmer:    Craig Stuart Sapp <craig@ccrma.stanford.edu>
+## Creation Date: Thu Mar  3 21:52:43 PST 2016
+## Last Modified: Thu Mar  3 21:52:49 PST 2016
+## Syntax:        GNU Makefile
+##
+## Description:   Makefile for Vamp plugins in OS X
+##
+
+# List of plugins that you want to be stored in the compiled .dylib file:
+PLUGINS 	= 
+PLUGINS        += MzPowerCurve
+
+# Lcations:
+SRCDIR		= src
+INCDIR          = include
+SRCDIR2		= src-plugin
+INCDIR2         = include-plugin
+OBJDIR		= obj-osx
+LIBDIR          = lib-osx
+VAMPDIR		= external/vamp
+FFTWDIR         = external/fftw
+#DATETAG	= $(shell date +%Y%m%d)
+
+# Where to look for various kinds of files:
+vpath %.cpp	$(SRCDIR) $(SRCDIR2)
+vpath %.h	$(VAMPDIR)/include $(FFTWDIR)/include $(INCDIR) $(INCDIR2)
+
+# Compiler options:
+CXXFLAGS	= -g -Wall -I$(INCDIR) -I$(INCDIR2)
+CXXFLAGS       += -I$(VAMPDIR)/include
+CXXFLAGS       += -I$(FFTWDIR)/include
+LIBS		= -L$(FFTWDIR)/lib -lfftw3
+LIBS	       += -L$(VAMPDIR)/lib -lvamp-sdk
+
+PLUGIN_EXT	= dylib
+PLUGIN_LDFLAGS	= -shared
+
+
+##########################################################################
+
+PLUGIN_SRC    	= $(foreach plugin,$(PLUGINS),$(plugin).cpp)
+
+# add Mazurka Plugins support code into the compile list:
+PLUGIN_SRC     += MazurkaPlugin.cpp
+PLUGIN_SRC     += MazurkaWindower.cpp
+PLUGIN_SRC     += MazurkaTransformer.cpp
+PLUGIN_SRC     += plugins.cpp
+
+PLUGIN_OBJECTS  = $(addprefix $(OBJDIR)/,$(patsubst %.cpp,%.o,$(PLUGIN_SRC)))
+
+# If you want to automatically compile all plugins, then use this instead:
+#PLUGIN_OBJECTS = $(patsubst %.cpp,%.o,$(wildcard $(SRCDIR)/*.cpp))
+
+#PLUGIN_LIB	= $(LIBDIR)/mazurka-plugins-$(DATETAG).$(PLUGIN_EXT)
+PLUGIN_LIB	= $(LIBDIR)/mazurka-plugins.$(PLUGIN_EXT)
+
+
+##########################################################################
+
+.PHONY: external
+
+
+all: external mkdirs table $(PLUGIN_LIB)
+
+
+external:
+	(cd external; $(MAKE) everything)
+
+
+mkdirs:		
+	-mkdir -p $(OBJDIR)
+	-mkdir -p $(LIBDIR)
+
+
+table:
+	# Create the main program which collects all plugins
+	(cd src; ../bin/makepluginscpp $(PLUGINS) > plugins.cpp)
+
+
+$(PLUGIN_LIB):  $(PLUGIN_OBJECTS) 
+	@echo compiling $(PLUGIN_OBJECTS)
+	$(CXX) -shared -o $@ $(PLUGIN_OBJECTS) \
+		$(LIBS) $(PLUGIN_LDFLAGS);
+
+
+%.o: %.cpp 
+	$(CXX) -c $(CXXFLAGS) -o $@ $<
+
+
+$(OBJDIR)/%.o:	%.cpp
+	$(CXX) -c $(CXXFLAGS) -o $@ $<
+

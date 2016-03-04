@@ -1,0 +1,207 @@
+#!/usr/bin/perl
+#
+# Programmer:    Craig Stuart Sapp <craig@ccrma.stanford.edu>
+# Creation Date: Mon May  8 18:10:56 PDT 2006
+# Last Modified: Sun May  6 01:48:58 PDT 2007 (upgraded to vamp 1.0)
+# Filename:      MazurkaPlugins/bin/makepluginscpp
+# Syntax:        perl 5
+#
+# Description:   Create a plugins.cpp program from available plugins.
+#
+
+use strict;
+
+my $date = `date`;
+chomp $date;
+
+my @plugins;
+my $i;
+
+if (@ARGV > 0) {
+   for ($i=0; $i<@ARGV; $i++) {
+      $plugins[@plugins] = $ARGV[$i];
+      # $plugins[@plugins] = $ARGV[$i] if -r "$ARGV[$i].cpp";
+   }
+} else {
+   @plugins = getPluginList(".");
+}
+
+# Generate a list of the plugins which are present in the set.
+my $pluginlist;
+my $i;
+for ($i=0; $i<@plugins; $i++) {
+   $pluginlist .= $plugins[$i];
+   if ($i < @plugins-1) {
+      $pluginlist .= "; ";
+   }
+}
+
+
+print <<"EOT";
+//
+// Programmer:    Craig Stuart Sapp <craig\@ccrma.stanford.edu>
+// Creation Date: Mon May  8 18:10:56 PDT 2006
+// Last Modified: $date
+// Filename:      MazurkaPlugins/src/plugins.cpp
+// Syntax:        ANSI99 C++; vamp 1.0 plugin
+//
+// Description:   Automatically generated file based on the 
+//                vamp sdk file examples/plugins.cpp
+//
+
+#include "vamp.h"
+#include "PluginAdapter.h"
+
+EOT
+
+printHeaders(@plugins);
+print "\n";
+printDeclarations(@plugins);
+
+print <<"EOT";
+
+// Pre vamp 1.0 interface:
+//const VampPluginDescriptor *vampGetPluginDescriptor(unsigned int index) {
+
+const VampPluginDescriptor *vampGetPluginDescriptor(
+      unsigned int vampApiVersion, unsigned int index) {
+   if (vampApiVersion < 1) {
+       return 0;
+   }
+
+   const char* setinfo = "\@\@VampPluginSet\@" __DATE__ "\@$pluginlist\@\@";
+   if (setinfo[0] != '\@') { 
+      std::cerr << "This is a dummy statment: " << setinfo << std::endl;
+   }
+
+    switch (index) {
+EOT
+
+printSwitchCases(@plugins);
+
+print <<"EOT";
+       default: return 0;
+    }
+}
+EOT
+
+exit(0);
+
+
+##########################################################################
+
+
+##############################
+##
+## printHeaders --
+##
+
+sub printHeaders {
+   my @plugins = @_;
+
+   my $i;
+   for ($i=0; $i<@plugins; $i++) {
+      print "\#include \"$plugins[$i].h\"\n";
+   }
+}
+
+
+
+##############################
+##
+## printDeclarations --
+##
+
+sub printDeclarations {
+   my @plugins = @_;
+
+   my $i;
+   my $uc;
+   my $lc;
+   for ($i=0; $i<@plugins; $i++) {
+      $uc = $plugins[$i];
+      $lc = lcfirst($uc);
+      print "static Vamp::PluginAdapter<$uc> ${lc}Adapter;\n";
+   }
+}
+
+
+
+##############################
+##
+## printSwitchCases --
+##
+
+sub printSwitchCases {
+   my @plugins = @_;
+
+   my $i;
+   my $lc;
+   for ($i=0; $i<@plugins; $i++) {
+       $lc = lcfirst($plugins[$i]);
+       print "       case  $i: return ${lc}Adapter.getDescriptor();\n";
+   }
+
+}
+
+
+
+##############################
+##
+## getPluginList --
+##
+
+sub getPluginList {
+   my ($plugindir) = @_;
+   my @output;
+   my $basename;
+
+   opendir(PDIR, $plugindir) || die;
+   my $file;
+   while  ($file = readdir(PDIR)) {
+      next if $file =~ /^\./;        # ignore files starting with dots
+      next if -d "$plugindir/$file"; # ignore subdirectories
+      next if $file !~ /^[A-Z]/;     # ignore files not starting with upper case
+      next if $file !~ /\.cpp$/;     # ignore files not ending in .cpp
+      $basename = $file;
+      $basename =~ s/\.cpp$//;
+      #next if !-r "$plugindir/$basename.h";  # .cpp must have a .h file
+      
+      # should now check the contents of the suspected plugin file
+      # to makesure that it has the relevant functions.
+      next if !hasValidInterface("$plugindir/$basename.cpp");
+      
+      $output[@output] = $basename;
+   }
+   closedir PDIR;
+
+   return sort @output;
+}
+
+
+
+##############################
+##
+## hasValidInterface --
+##
+
+
+sub hasValidInterface {
+   my ($file) = @_;
+
+   open (FILE, $file) or die "Cannot open $file";
+   my @filestats = stat FILE;
+   my $filesize = $filestats[7];
+   my $contents;
+   read FILE, $contents, $filesize;
+   close FILE;
+
+   return 0 if $contents !~ /initialise/s;
+   return 0 if $contents !~ /process/s;
+   return 0 if $contents !~ /getRemainingFeatures/s;
+  
+   return 1;
+}
+
+
+
