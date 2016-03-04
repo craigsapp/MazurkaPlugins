@@ -2,7 +2,7 @@ Mazurka Plugins
 ================
 
 The Mazurka Plugins are a set of [Vamp plugins](http://www.vamp-plugins.org),
-particularly for use with [Sonic Visualiser](http://www.sonic-visualiser.org).
+particularly for use with [Sonic Visualiser](http://www.sonicvisualiser.org).
 
 
 Downloading
@@ -23,7 +23,7 @@ Configuration
 Source code for individual plugins are found in the
 [src-plugin](https://github.com/craigsapp/MazurkaPlugins/tree/master/src-plugin)
 directory.  Edit the file
-[Makefile.plugin](https://github.com/craigsapp/MazurkaPlugins/tree/master/Makefile.plugin#L10-L12)
+[Makefile.plugin](https://github.com/craigsapp/MazurkaPlugins/tree/master/Makefile.plugin#L10-L25)
 to select which plugins should be included in the compiled plugin file.
 
 
