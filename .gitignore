@@ -9,3 +9,4 @@ external/fftw/lib
 external/vamp/vamp-*
 external/vamp/include
 external/vamp/lib
+src/plugins.cpp
