@@ -10,8 +10,21 @@
 # List of plugins that you want to be stored in the compiled .dylib file:
 PLUGINS 	= 
 PLUGINS        += MzPowerCurve
+PLUGINS        += MzChronogram
+PLUGINS        += MzHarmonicSpectrum
+PLUGINS        += MzNevermore
+PLUGINS        += MzPitchPower
+PLUGINS        += MzPowerSpectrogram
+PLUGINS        += MzPowerscape
+PLUGINS        += MzSilenceFinder
+PLUGINS        += MzSpectralFlatness
+PLUGINS        += MzSpectralFlux
+PLUGINS        += MzSpectrogramClient
+PLUGINS        += MzSpectrogramFFTW
+PLUGINS        += MzSpectrogramHost
+PLUGINS        += MzSummation
 
-# Lcations:
+# Locations:
 SRCDIR		= src
 INCDIR          = include
 SRCDIR2		= src-plugin

@@ -10,8 +10,8 @@
 // Description:   DFT spectrogram with independent window and transform size.
 // 
 
-#ifndef _MZNEVERMORE_H_INCLUDED
-#define _MZNEVERMORE_H_INCLUDED
+#ifndef _MZPOWERSPECTROGRAM_H_INCLUDED
+#define _MZPOWERSPECTROGRAM_H_INCLUDED
 
 #include "MazurkaPlugin.h"  // Mazurka plugin interface for Sonic Visualiser
 #include "MazurkaTransformer.h"
@@ -64,6 +64,10 @@ class MzPowerSpectrogram : public MazurkaPlugin {
       int    mz_maxbin;        // maximum bin to display
       int    mz_compress;      // for compressing the magnigude range
       int    mz_scale;         // for the vertical scale of freq. axis
+
+
+      MazurkaTransformer mz_transformer;   // interface FFTW Fourier transforms
+      MazurkaWindower    mz_windower;      // interface for windowsing signals
        
       // long window transformer
       MazurkaTransformer mz_transformerB;  // interface FFTW Fourier transforms
@@ -85,5 +89,5 @@ class MzPowerSpectrogram : public MazurkaPlugin {
 };
 
 
-#endif // _MZNEVERMORE_H_INCLUDED
+#endif // _MZPOWERSPECTROGRAM_H_INCLUDED
 

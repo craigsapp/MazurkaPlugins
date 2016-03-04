@@ -21,6 +21,11 @@ plugin:
 	$(MAKE) -f Makefile.plugin
 
 
+install:
+	mkdir -p ~/Library/Audio/Plugin-Ins/Vamp
+	cp lib-osx/mazurka-plugins.dylib ~/Library/Audio/Plug-Ins/Vamp/
+
+
 external:
 	(cd external; $(MAKE) everything)
 
@@ -33,5 +38,13 @@ clean:
 superclean: clean
 	-rm -rf lib-osx
 	(cd external; $(MAKE) superclean)
+
+
+
+
+
+
+
+
 
 

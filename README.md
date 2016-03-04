@@ -55,6 +55,11 @@ Installing
 The compiled plugin is found in `lib-osx/mazurka-plugins.dylib`.
 Copy this file to `~/Library/Audio/Plugin-Ins/Vamp` and (re)start
 Sonic Visualiser to used the new plugin file from the Transform menu.
+To copy the plugin to the plugin directory, type:
+
+```bash
+make install
+```
 
 
 
