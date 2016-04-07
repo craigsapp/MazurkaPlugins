@@ -46,6 +46,7 @@ MzPitchPower::MzPitchPower(float samplerate) : MazurkaPlugin(samplerate) {
    mz_harmonics     = 5;            // how many harmonics to consider
    mz_method        = METHOD_ADDITION;  // add harmonic powers together
    mz_transformsize = 16384;     // size of the FFT transformations
+   // ^^ an FFT needs to take in a total numebr of data points equal to 2-to-th2-nth power (e.g. 512, 1024, 2048, up to 16384) - section of the waveform will become bounded to enclose this number of data points
 }
 
 
@@ -126,7 +127,7 @@ MzPitchPower::getParameterDescriptors(void) const {
    pdlist.push_back(pd);
    pd.valueNames.clear();
 
-   // fifth parameter: Cents deviation
+   // fifth parameter: Cents deviation - used for what? is this different from tuning below?
    pd.identifier   = "cents";
    pd.name         = "Cents";
    pd.unit         = "cent";
@@ -150,7 +151,7 @@ MzPitchPower::getParameterDescriptors(void) const {
    pdlist.push_back(pd);
    pd.valueNames.clear();
 
-   // seventh parameter: Fundamental frequency
+   // seventh parameter: Fundamental frequency (-1 means what?)
    pd.identifier   = "freq";
    pd.name         = "or\nFundamental\nFrequency";
    pd.unit         = "Hz";
@@ -370,7 +371,7 @@ bool MzPitchPower::initialise(size_t channels, size_t stepsize,
    }
 
    setStepSize(stepsize);
-   setBlockSize(blocksize);
+   setBlockSize(blocksize); //not sure what blocksize is
    setChannelCount(channels);
 
    mz_harmonics  = getParameterInt("harmonics");
@@ -378,12 +379,12 @@ bool MzPitchPower::initialise(size_t channels, size_t stepsize,
 
    double midi   = getParameterDouble("pitch");
    double cents  = getParameterDouble("cents");
-   double a4tune = getParameterDouble("tune");
+   double a4tune = getParameterDouble("tuning");
    double freq   = getParameterDouble("freq");
-   double a4midi = 6.0;
+   double a4midi = 69.0; //this should be 69
 
    if (freq < 0.0) {
-      freq = a4tune * pow(2.0, (a4midi - midi + cents/100.0) / 12.0);
+      freq = a4tune * pow(2.0, (midi - a4midi + cents/100.0) / 12.0); //corrected equation
       cerr << "Pitch Fundamental Frequency: " << freq << endl;
    }
 
@@ -407,7 +408,7 @@ bool MzPitchPower::initialise(size_t channels, size_t stepsize,
    
    mz_transformer.setSize(mz_transformsize);
    mz_transformer.zeroSignal();
-   mz_windower.setSize(getBlockSize());
+   mz_windower.setSize(getBlockSize()); //set size of window
    // Note that Hann window or other high side-lobe windows
    // will not work so well because the side-lobes are noise
    // which will over-estimate the energy in harmonics.  However,
@@ -457,7 +458,7 @@ MzPitchPower::FeatureSet MzPitchPower::process(AUDIODATA inputbufs,
    mz_transformer.doTransform();
 
    vector<double> harmonic_power;
-   extractHarmonicPowers(harmonic_power, mz_bins, mz_transformer);
+   extractHarmonicPowers(harmonic_power, mz_bins, mz_transformer); //**should this be pass by reference or value? how do we know its returning the actual harmonic power?
 
    double ppower = 0.0;
 
