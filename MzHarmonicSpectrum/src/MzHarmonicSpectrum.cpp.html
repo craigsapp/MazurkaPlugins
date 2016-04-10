@@ -1,0 +1,791 @@
+<!---------------------------------------------------------------------------->
+<html>
+<head>
+<title> Sig++ example program: MzHarmonicSpectrum.cpp </title>
+<meta name="Document-Owner" content="Craig Sapp (craig@ccrma.stanford.edu)"> 
+<meta name="Author" content="Craig Stuart Sapp (craig@ccrma.stanford.edu)">
+<meta name="Creation-Date" content=" Tue May  9 19:38:11 PDT 2000 ">
+<meta name="Revision-Date" content=" Wed Dec 27 07:42:39 PST 2006
+ ">
+</head>
+
+<body bgcolor=#ffffff alink=#333399 link=#333399 vlink=#333399 text=#220000>
+<!-- header *************************************************** -->
+
+<center>
+<table width=760 cellpadding=0 cellspacing=0 border=0>
+<tr valign=top>
+<td>
+   <a href=http://www.charm.rhul.ac.uk><img alt="" border=0 src=../../images/logo.gif></a>
+</td>
+<td>
+   <a href=http://mazurka.org.uk><img alt="" border=0 src=../../images/banner.gif></a>
+</td>
+</tr>
+</table>
+</center>
+
+<center>
+<table><tr><td>
+
+
+<pre>
+<font color=#229933>//</font>
+<font color=#229933>// Programmer:    Craig Stuart Sapp &lt;craig@ccrma.stanford.edu&gt;</font>
+<font color=#229933>// Creation Date: Sun Jun 18 00:23:13 PDT 2006</font>
+<font color=#229933>// Last Modified: Sat Jun 24 01:28:37 PDT 2006</font>
+<font color=#229933>// Filename:      MzHarmonicSpectrum.cpp</font>
+<font color=#229933>// URL:           <a href=http://sv.mazurka.org.uk/src/MzHarmonicSpectrum.cpp>http://sv.mazurka.org.uk/src/MzHarmonicSpectrum.cpp</a></font>
+<font color=#229933>// Documentation: <a href=http://sv.mazurka.org.uk/MzHarmonicSpectrum>http://sv.mazurka.org.uk/MzHarmonicSpectrum</a></font>
+<font color=#229933>// Syntax:        ANSI99 C++; vamp plugin</font>
+<font color=#229933>//</font>
+<font color=#229933>// Description:   Display a harmonic spectrum</font>
+<font color=#229933>//</font>
+
+#include "MzHarmonicSpectrum.h" 
+#include &lt;stdio.h&gt;
+#include &lt;string&gt;
+#include &lt;math.h&gt;
+
+#define METHOD_MAGNITUDE_PRODUCT   1
+#define METHOD_MAGNITUDE_SUMMATION 2
+#define METHOD_COMPLEX_SUMMATION   3
+
+<font color=#229933>///////////////////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// Vamp Interface Functions</font>
+<font color=#229933>//</font>
+<a name=constructor>
+</a><font color=#229933>///////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzHarmonicSpectrum::MzHarmonicSpectrum</b> -- class constructor.</font>
+<font color=#229933>//</font>
+
+MzHarmonicSpectrum::MzHarmonicSpectrum(float samplerate) : 
+     <a name=MazurkaPlugin> </a><font color=#000000><b>MazurkaPlugin</b></font>(samplerate) {
+   mz_harmonics     = 5;
+   mz_transformsize = 16384;
+   mz_minbin        = 0;
+   mz_maxbin        = 511;
+   mz_compress      = 0;
+}
+
+
+<a name=destructor>
+</a><font color=#229933>///////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzHarmonicSpectrum::~MzHarmonicSpectrum</b> -- class destructor.</font>
+<font color=#229933>//</font>
+
+MzHarmonicSpectrum::~MzHarmonicSpectrum() {
+   <font color=#229933>// do nothing</font>
+}
+
+
+<font color=#229933>////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// parameter functions --</font>
+<font color=#229933>//</font>
+<a name=getParameterDescriptors>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzHarmonicSpectrum::getParameterDescriptors</b> -- return a list of</font>
+<font color=#229933>//      the parameters which can control the plugin.</font>
+<font color=#229933>//</font>
+
+MzHarmonicSpectrum::ParameterList 
+MzHarmonicSpectrum::getParameterDescriptors(void) const {
+
+   ParameterList       pdlist;
+   ParameterDescriptor pd;
+
+   <font color=#229933>// first parameter: The number of samples in the audio window</font>
+   pd.name         = "windowsamples";
+   pd.description  = "Window size";
+   pd.unit         = "samples";
+   pd.minValue     = 2.0;
+   pd.maxValue     = 10000;
+   pd.defaultValue = 1500.0;
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+
+   <font color=#229933>// second parameter: The step size between analysis windows.</font>
+   pd.name         = "stepsamples";
+   pd.description  = "Step size";
+   pd.unit         = "samples";
+   pd.minValue     = 2.0;
+   pd.maxValue     = 30000.0;
+   pd.defaultValue = 512.0; 
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+
+   <font color=#229933>// third parameter: The number of harmonics to consider</font>
+   pd.name         = "harmonics";
+   pd.description  = "Harmonics";
+   pd.unit         = "";
+   pd.minValue     = 2.0;
+   pd.maxValue     = 20.0;
+   pd.defaultValue = 5.0; 
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+
+   <font color=#229933>// fourth parameter: The minimum pitch to consider</font>
+   pd.name         = "minpitch";
+   pd.description  = "Min pitch";
+   pd.unit         = "MIDI data";
+   pd.minValue     = 0.0;
+   pd.maxValue     = 127.0;
+   generateMidiNoteList(pd.valueNames, 0, 127);
+   pd.defaultValue = 36.0; 
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+   pd.valueNames.clear();
+
+   <font color=#229933>// fifth parameter: The maximum pitch to consider</font>
+   pd.name         = "maxpitch";
+   pd.description  = "Max pitch";
+   pd.unit         = "MIDI data";
+   pd.minValue     = 0.0;
+   pd.maxValue     = 127.0;
+   generateMidiNoteList(pd.valueNames, 0, 127);
+   pd.defaultValue = 84.0; 
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+   pd.valueNames.clear();
+
+   <font color=#229933>// sixth parameter: The method for harmonic correlation</font>
+   pd.name         = "method";
+   pd.description  = "Method";
+   pd.unit         = "";
+   pd.minValue     = 1.0;
+   pd.maxValue     = 3.0;
+   pd.valueNames.push_back("Magnitude Product");
+   pd.valueNames.push_back("Magnitude Summation");
+   pd.valueNames.push_back("Complex Summation");
+   pd.defaultValue = 1.0; 
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+   pd.valueNames.clear();
+
+   <font color=#229933>// seventh parameter: Magnitude range compression.</font>
+   pd.name         = "compress";
+   pd.description  = "Compress range";
+   pd.unit         = "";
+   pd.minValue     = 0.0;
+   pd.maxValue     = 1.0;
+   pd.defaultValue = 0.0;
+   pd.valueNames.push_back("no");
+   pd.valueNames.push_back("yes");
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+   pd.valueNames.clear();
+
+   return pdlist;
+}
+
+
+<font color=#229933>////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// optional polymorphic functions inherited from PluginBase:</font>
+<font color=#229933>//</font>
+<a name=getPreferredStepSize>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzHarmonicSpectrum::getPreferredStepSize</b> -- overrides the </font>
+<font color=#229933>//     default value of 0 (no preference) returned in the </font>
+<font color=#229933>//     inherited plugin class.</font>
+<font color=#229933>//</font>
+
+size_t MzHarmonicSpectrum::getPreferredStepSize(void) const {
+   return getParameterInt("stepsamples");
+}
+
+
+<a name=getPreferredBlockSize>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzHarmonicSpectrum::getPreferredBlockSize</b> -- overrides the </font>
+<font color=#229933>//     default value of 0 (no preference) returned in the </font>
+<font color=#229933>//     inherited plugin class.</font>
+<font color=#229933>//</font>
+
+size_t MzHarmonicSpectrum::getPreferredBlockSize(void) const {
+ 
+   int transformsize = getParameterInt("transformsamples");
+   int blocksize     = getParameterInt("windowsamples");
+
+   if (blocksize &gt; transformsize) {
+      blocksize = transformsize;
+   }
+
+   return blocksize;
+}
+
+
+<font color=#229933>////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// required polymorphic functions inherited from PluginBase:</font>
+<font color=#229933>//</font>
+
+std::string MzHarmonicSpectrum::getName(void) const
+   { return "mzharmonicspectrum"; }
+
+std::string MzHarmonicSpectrum::getMaker(void) const
+   { return "The Mazurka Project"; }
+
+std::string MzHarmonicSpectrum::getCopyright(void) const
+   { return "2006 Craig Stuart Sapp"; }
+
+std::string MzHarmonicSpectrum::getDescription(void) const
+   { return "Harmonic Spectrogram"; }
+
+int MzHarmonicSpectrum::getPluginVersion(void) const {
+   #define P_VER    "200606190"
+   #define P_NAME   "MzHarmonicSpectrum"
+
+   const char *v = "@@VampPluginID@" P_NAME "@" P_VER "@" __DATE__ "@@";
+   if (v[0] != '@') { std::cerr &lt;&lt; v &lt;&lt; std::endl; return 0; }
+
+   return atol(P_VER);
+}
+
+
+<font color=#229933>////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// required polymorphic functions inherited from Plugin:</font>
+<font color=#229933>//</font>
+<a name=getInputDomain>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzHarmonicSpectrum::getInputDomain</b> -- the host application needs</font>
+<font color=#229933>//    to know if it should send either:</font>
+<font color=#229933>//</font>
+<font color=#229933>// TimeDomain      == Time samples from the audio waveform.</font>
+<font color=#229933>// FrequencyDomain == Spectral frequency frames which will arrive</font>
+<font color=#229933>//                    in an array of interleaved real, imaginary</font>
+<font color=#229933>//                    values for the complex spectrum (both positive </font>
+<font color=#229933>//                    and negative frequencies). Zero Hz being the</font>
+<font color=#229933>//                    first frequency sample and negative frequencies</font>
+<font color=#229933>//                    at the far end of the array as is usually done.</font>
+<font color=#229933>//                    Note that frequency data is transmitted from</font>
+<font color=#229933>//                    the host application as floats.  The data will</font>
+<font color=#229933>//                    be transmitted via the process() function which</font>
+<font color=#229933>//                    is defined further below.</font>
+<font color=#229933>//</font>
+
+MzHarmonicSpectrum::InputDomain MzHarmonicSpectrum::getInputDomain(void) const { 
+   return TimeDomain; 
+}
+
+
+<a name=getOutputDescriptors>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzHarmonicSpectrum::getOutputDescriptors</b> -- return a list describing</font>
+<font color=#229933>//    each of the available outputs for the object.  OutputList</font>
+<font color=#229933>//    is defined in the file vamp-sdk/Plugin.h:</font>
+<font color=#229933>//</font>
+<font color=#229933>// .name             == short name of output for computer use.  Must not</font>
+<font color=#229933>//                      contain spaces or punctuation.</font>
+<font color=#229933>// .description      == long name of output for human use.</font>
+<font color=#229933>// .unit             == the units or basic meaning of the data in the </font>
+<font color=#229933>//                      specified output.</font>
+<font color=#229933>// .hasFixedBinCount == true if each output feature (sample) has the </font>
+<font color=#229933>//                      same dimension.</font>
+<font color=#229933>// .binCount         == when hasFixedBinCount is true, then this is the </font>
+<font color=#229933>//                      number of values in each output feature.  </font>
+<font color=#229933>//                      binCount=0 if timestamps are the only features,</font>
+<font color=#229933>//                      and they have no labels.</font>
+<font color=#229933>// .binNames         == optional description of each bin in a feature.</font>
+<font color=#229933>// .hasKnownExtent   == true if there is a fixed minimum and maximum</font>
+<font color=#229933>//                      value for the range of the output.</font>
+<font color=#229933>// .minValue         == range minimum if hasKnownExtent is true.</font>
+<font color=#229933>// .maxValue         == range maximum if hasKnownExtent is true.</font>
+<font color=#229933>// .isQuantized      == true if the data values are quantized.  Ignored</font>
+<font color=#229933>//                      if binCount is set to zero.</font>
+<font color=#229933>// .quantizeStep     == if isQuantized, then the size of the quantization,</font>
+<font color=#229933>//                      such as 1.0 for integers.</font>
+<font color=#229933>// .sampleType       == Enumeration with three possibilities:</font>
+<font color=#229933>//   OD::OneSamplePerStep   -- output feature will be aligned with</font>
+<a name=VariableSampleRate><font color=#229933>//                             the beginning time of the input block data.</font>
+</a><font color=#229933>//   OD::FixedSampleRate    -- results are evenly spaced according to </font>
+<font color=#229933>//                             .sampleRate (see below).</font>
+<font color=#229933>//   <b>OD::VariableSampleRate</b> -- output features have individual timestamps.</font>
+<font color=#229933>// .sampleRate       == samples per second spacing of output features when</font>
+<font color=#229933>//                      sampleType is set toFixedSampleRate.</font>
+<font color=#229933>//                      Ignored if sampleType is set to OneSamplePerStep</font>
+<font color=#229933>//                      since the start time of the input block will be used.</font>
+<font color=#229933>//                      Usually set the sampleRate to 0.0 if VariableSampleRate</font>
+<font color=#229933>//                      is used; otherwise, see vamp-sdk/Plugin.h for what</font>
+<font color=#229933>//                      positive sampleRates would mean.</font>
+<font color=#229933>//</font>
+
+MzHarmonicSpectrum::OutputList 
+MzHarmonicSpectrum::getOutputDescriptors(void) const {
+
+   OutputList       odlist;
+   OutputDescriptor od;
+
+   std::string s;
+   char buffer[1024] = {0};
+   int val;
+
+   <font color=#229933>// First output channel: harmonic spectrogram</font>
+   od.name             = "spectrogram";
+   od.description      = "Spectrogram";
+   od.unit             = "bin";
+   od.hasFixedBinCount = true;
+   od.binCount         = mz_maxbin - mz_minbin + 1;
+   for (int i=mz_minbin; i&lt;=mz_maxbin; i++) {
+      val = int((i+0.5) * getSrate() / mz_transformsize + 0.5);
+      sprintf(buffer, "%d:%d", i, val);
+      s = buffer;
+      od.binNames.push_back(s);
+   }
+   if (mz_compress) {
+      od.hasKnownExtents  = true;
+      od.minValue         = 0.0;
+      od.maxValue         = 1.0;
+   } else {
+      od.hasKnownExtents  = false;
+   }
+   od.isQuantized      = false;
+   <font color=#229933>// od.quantizeStep  = 1.0;</font>
+   od.sampleType       = OutputDescriptor::OneSamplePerStep;
+   <font color=#229933>// od.sampleRate    = 0.0;</font>
+   odlist.push_back(od);
+   od.binNames.clear();
+
+   <font color=#229933>// Second output channel: Spectral Power</font>
+   od.name             = "spectralpower";
+   od.description      = "Spectral power";
+   od.unit             = "";
+   od.hasFixedBinCount = true;
+   od.binCount         = 1;
+   od.hasKnownExtents  = false;   <font color=#229933>// could set to true.</font>
+   <font color=#229933>// od.minValue      = 0.0;</font>
+   <font color=#229933>// od.maxValue      = 1.0;</font>
+   od.isQuantized      = false;
+   <font color=#229933>// od.quantizeStep  = 1.0;</font>
+   od.sampleType       = OutputDescriptor::OneSamplePerStep;
+   <font color=#229933>// od.sampleRate    = 0.0;</font>
+   odlist.push_back(od);
+
+   <font color=#229933>// Third output channel: Maximum value as central frequency of max bin.</font>
+   od.name             = "rawpitch";
+   od.description      = "HS raw pitch estimate";
+   od.unit             = "Hz";
+   od.hasFixedBinCount = true;
+   od.binCount         = 1;
+   od.hasKnownExtents  = false;   <font color=#229933>// could set to true.</font>
+   <font color=#229933>// od.minValue      = 0.0;</font>
+   <font color=#229933>// od.maxValue      = 1.0;</font>
+   od.isQuantized      = false;
+   <font color=#229933>// od.quantizeStep  = 1.0;</font>
+   od.sampleType       = OutputDescriptor::OneSamplePerStep;
+   <font color=#229933>// od.sampleRate    = 0.0;</font>
+   odlist.push_back(od);
+   od.binNames.clear();
+
+   <font color=#229933>// output channel: refined pitch estimate</font>
+   <font color=#229933>// to be added</font>
+
+   return odlist; 
+}
+
+
+<a name=initialise>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzHarmonicSpectrum::initialise</b> -- this function is called once</font>
+<font color=#229933>//     before the first call to process().</font>
+<font color=#229933>//</font>
+
+bool MzHarmonicSpectrum::initialise(size_t channels, size_t stepsize, 
+      size_t blocksize) {
+
+   if (channels &lt; getMinChannelCount() || channels &gt; getMaxChannelCount()) {
+      return false;
+   }
+
+   <font color=#229933>// step size and block size should never be zero</font>
+   if (stepsize &lt;= 0 || blocksize &lt;= 0) {
+      return false;
+   }
+
+   setStepSize(stepsize);
+   setBlockSize(blocksize);
+   setChannelCount(channels);
+
+   if (getBlockSize() &gt; mz_transformsize) {
+      setBlockSize(mz_transformsize);
+   }
+
+   mz_method       = getParameterInt("method");
+   mz_harmonics    = getParameterInt("harmonics");
+   mz_compress     = getParameterInt("compress");
+
+   double minfreq, maxfreq, a440interval;
+
+   a440interval = getParameter("minpitch") - 69.0;
+   minfreq = 440.0 * pow(2.0, a440interval / 12.0);
+   mz_minbin = int(minfreq * mz_transformsize / getSrate());
+
+   a440interval = getParameter("maxpitch") - 69.0;
+   maxfreq = 440.0 * pow(2.0, a440interval / 12.0);
+   mz_maxbin = int(maxfreq * mz_transformsize / getSrate() + 0.999);
+
+   if (mz_minbin &gt; mz_maxbin) {
+      std::swap(mz_minbin, mz_maxbin);
+   }
+
+   if (mz_maxbin &gt;= mz_transformsize) {
+      std::cerr &lt;&lt; "MzHarmonicSpectrum::initialize: maxbin size problem" 
+                &lt;&lt; std::endl;
+      std::cerr &lt;&lt; "MzHarmonicSpectrum::initialize: maxbin = " 
+                &lt;&lt; mz_maxbin &lt;&lt; std::endl;
+      std::cerr &lt;&lt; "MzHarmonicSpectrum::initialize: transformsize = " 
+                &lt;&lt; mz_transformsize &lt;&lt; std::endl;
+      return false;
+   }
+
+   if (mz_minbin &lt; 0) {
+      std::cerr &lt;&lt; "MzHarmonicSpectrum::initialize: minbin size problem" 
+                &lt;&lt; std::endl;
+      std::cerr &lt;&lt; "MzHarmonicSpectrum::initialize: minbin = " 
+                &lt;&lt; mz_minbin &lt;&lt; std::endl;
+      return false;
+   }
+
+   mz_transformer.setSize(mz_transformsize);
+   mz_transformer.zeroSignal();
+   mz_windower.setSize(getBlockSize());
+   mz_windower.makeWindow("Hann");
+
+   return true;
+}
+
+
+<a name=process>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzHarmonicSpectrum::process</b> -- This function is called sequentially on the </font>
+<font color=#229933>//    input data, block by block.  After the sequence of blocks has been</font>
+<font color=#229933>//    processed with process(), the function getRemainingFeatures() will </font>
+<font color=#229933>//    be called.</font>
+<font color=#229933>//</font>
+<font color=#229933>// Here is a reference chart for the Feature struct:</font>
+<font color=#229933>//</font>
+<font color=#229933>// .hasTimestamp   == If the OutputDescriptor.sampleType is set to</font>
+<font color=#229933>//                    VariableSampleRate, then this should be "true".</font>
+<font color=#229933>// .timestamp      == The time at which the feature occurs in the time stream.</font>
+<font color=#229933>// .values         == The float values for the feature.  Should match</font>
+<font color=#229933>//                    OD::binCount.</font>
+<font color=#229933>// .label          == Text associated with the feature (for time instants).</font>
+<font color=#229933>//</font>
+
+#define<a name=sigmoidscale> </a><font color=#000000><b>sigmoidscale</b></font>(x,c,w)  (1.0/(1.0+exp(-((x)-(c))/((w)/8.0))))
+#define NONPEAKFACTOR 0.2
+
+MzHarmonicSpectrum::FeatureSet MzHarmonicSpectrum::process(float **inputbufs, 
+      Vamp::RealTime timestamp) {
+
+   if (getStepSize() &lt;= 0) {
+      std::cerr &lt;&lt; "ERROR: MzHarmonicSpectrum::process: "
+                &lt;&lt; "MzHarmonicSpectrum has not been initialized"
+                &lt;&lt; std::endl;
+      return FeatureSet();
+   }
+
+   FeatureSet returnFeatures;
+   Feature feature;
+
+   feature.hasTimestamp = false;
+
+   mz_windower.windowNonCausal(mz_transformer, inputbufs[0], getBlockSize());
+
+   mz_transformer.doTransform();
+
+   int bincount = mz_maxbin - mz_minbin + 1;
+   feature.values.resize(bincount);
+
+   int spectrumsize = mz_transformsize / 2;
+   std::vector&lt;double&gt; magnitudespectrum(spectrumsize);
+   std::vector&lt;mz_complex&gt; complexspectrum(spectrumsize);
+   std::vector&lt;int&gt;    harmoniccount(bincount);
+
+   int i, j;
+   for (i=0; i&lt;bincount; i++) {
+      harmoniccount[i] = 0;
+   }
+
+   int topbin = mz_maxbin * mz_harmonics;
+   if (topbin &gt;= spectrumsize) {
+      topbin = spectrumsize - 1;
+   }
+
+
+   int index;
+   std::vector&lt;int&gt; maxpeak(spectrumsize);
+   mz_complex complexsum;
+   mz_complex&cs = complexsum;
+   int maxvaluebin = 0;    
+   double spectralpower = 0.0;
+
+   switch (mz_method) {
+
+      case METHOD_MAGNITUDE_SUMMATION:
+
+         for (i=0; i&lt;spectrumsize; i++) {
+            magnitudespectrum[i] = mz_transformer.getSpectrumMagnitude(i);
+            if (i &gt; topbin) {
+               <font color=#229933>// won't need the rest of the magnitude spectrum</font>
+               break;
+            }
+         }
+
+         for (i=mz_minbin; i&lt;=mz_maxbin; i++) {
+            feature.values[i - mz_minbin] = 0.0;
+            for (j=1; j&lt;=mz_harmonics; j++) {
+               index = i*j;
+               if (index &gt; spectrumsize) {
+                  break;
+               }
+               feature.values[i - mz_minbin] += magnitudespectrum[index];
+               harmoniccount[i - mz_minbin]++;
+            }
+         }
+
+         <font color=#229933>// convert the harmonic spectrum to db</font>
+         for (i=0; i&lt;bincount; i++) {
+            if (feature.values[i] &lt;= 0.0) {
+               feature.values[i] = -120.0;
+            } else {
+               spectralpower += feature.values[i] / harmoniccount[i];
+               feature.values[i] = 20.0 
+		     * log10(feature.values[i] / harmoniccount[i]);
+            }
+            if (feature.values[i] &gt; feature.values[maxvaluebin]) {
+               maxvaluebin = i;
+            }
+         }
+
+         break;
+
+      case METHOD_COMPLEX_SUMMATION:
+
+         for (i=0; i&lt;spectrumsize; i++) {
+            complexspectrum[i] = mz_transformer.getSpectrum(i);
+            if (i &gt; topbin) {
+               <font color=#229933>// won't need the rest of the magnitude spectrum</font>
+               break;
+            }
+         }
+
+         for (i=mz_minbin; i&lt;=mz_maxbin; i++) {
+	    complexsum.re = 0.0;
+	    complexsum.im = 0.0;
+            for (j=1; j&lt;=mz_harmonics; j++) {
+               index = i*j;
+               if (index &gt; spectrumsize) {
+                  break;
+               }
+               complexsum.re +=  complexspectrum[index].re;
+               complexsum.im +=  complexspectrum[index].im;
+               harmoniccount[i - mz_minbin]++;
+            }
+            feature.values[i - mz_minbin] = sqrt(cs.re*cs.re + cs.im*cs.im);
+         }
+
+         <font color=#229933>// convert the harmonic spectrum to db</font>
+         for (i=0; i&lt;bincount; i++) {
+            if (feature.values[i] &lt;= 0.0) {
+               feature.values[i] = -120.0;
+            } else {
+               spectralpower += feature.values[i] / harmoniccount[i];
+               feature.values[i] = 20.0 
+		     * log10(feature.values[i] / harmoniccount[i]);
+            }
+            if (feature.values[i] &gt; feature.values[maxvaluebin]) {
+               maxvaluebin = i;
+            }
+         }
+
+         break;
+
+      case METHOD_MAGNITUDE_PRODUCT:
+      default:
+
+         for (i=0; i&lt;spectrumsize; i++) {
+            magnitudespectrum[i] = mz_transformer.getSpectrumMagnitude(i);
+            if (i &gt; topbin) {
+               <font color=#229933>// won't need the rest of the magnitude spectrum</font>
+               break;
+            }
+         }
+
+         for (i=mz_minbin; i&lt;=mz_maxbin; i++) {
+            feature.values[i - mz_minbin] = 1.0;
+            for (j=1; j&lt;=mz_harmonics; j++) {
+               index = i*j;
+               if (index &gt; spectrumsize) {
+                  break;
+               }
+               feature.values[i - mz_minbin] *= magnitudespectrum[index];
+               harmoniccount[i - mz_minbin]++;
+            }
+         }
+
+         <font color=#229933>// convert the harmonic spectrum to db</font>
+         for (i=0; i&lt;bincount; i++) {
+            if (feature.values[i] &lt;= 0.0) {
+               feature.values[i] = -120.0;
+            } else {
+               spectralpower += pow(feature.values[i], 1.0/harmoniccount[i]);
+               feature.values[i] = 20.0 / harmoniccount[i] 
+		                   * log10(feature.values[i]);
+            }
+            if (feature.values[i] &gt; feature.values[maxvaluebin]) {
+               maxvaluebin = i;
+            }
+         }
+
+   }
+
+   double cen;
+   if (mz_compress) {
+      for (i=0; i&lt;bincount; i++) {
+	 cen = -40.0 * i / bincount;
+         feature.values[i] = 
+               <a href=#sigmoidscale>sigmoidscale</a>(feature.values[i], cen, 60);
+      }
+   }
+
+   returnFeatures[0].push_back(feature);
+
+
+   <font color=#229933>// process the second output from the plugin:</font>
+
+   feature.hasTimestamp = false;
+   feature.values.clear();
+   feature.values.push_back(spectralpower / (mz_maxbin - mz_minbin + 1));
+
+   returnFeatures[1].push_back(feature);
+
+
+   <font color=#229933>// process the third output from the plugin:</font>
+
+   float pitchestimate = float(maxvaluebin * getSrate() / mz_transformsize);
+   feature.hasTimestamp = false;
+   feature.values.clear();
+   feature.values.push_back(pitchestimate);
+
+   returnFeatures[2].push_back(feature);
+
+   return returnFeatures;
+}
+
+
+<a name=getRemainingFeatures>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzHarmonicSpectrum::getRemainingFeatures</b> -- This function is called</font>
+<font color=#229933>//    after the last call to process() on the input data stream has </font>
+<font color=#229933>//    been completed.  Features which are non-causal can be calculated </font>
+<font color=#229933>//    at this point.  See the comment above the process() function</font>
+<font color=#229933>//    for the format of output Features.</font>
+<font color=#229933>//</font>
+
+MzHarmonicSpectrum::FeatureSet MzHarmonicSpectrum::getRemainingFeatures(void) {
+   <font color=#229933>// no remaining features, so return a dummy feature</font>
+   return FeatureSet();
+}
+
+
+<a name=reset>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzHarmonicSpectrum::reset</b> -- This function may be called after data </font>
+<font color=#229933>//    processing has been started with the process() function.  It will </font>
+<font color=#229933>//    be called when processing has been interrupted for some reason and </font>
+<font color=#229933>//    the processing sequence needs to be restarted (and current analysis </font>
+<font color=#229933>//    output thrown out).  After this function is called, process() will </font>
+<font color=#229933>//    start at the beginning of the input selection as if initialise() </font>
+<font color=#229933>//    had just been called.  Note, however, that initialise() will NOT </font>
+<font color=#229933>//    be called before processing is restarted after a reset().</font>
+<font color=#229933>//</font>
+
+void MzHarmonicSpectrum::reset(void) {
+   <font color=#229933>// no actions necessary to reset this plugin</font>
+}
+
+
+<font color=#229933>///////////////////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// Non-Interface Functions </font>
+<font color=#229933>//</font>
+
+<a name=generateMidiNoteList>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>generateMidiNoteList</b> -- Create a list of pitch names for the </font>
+<font color=#229933>//   specified MIDI key number range.</font>
+<font color=#229933>//</font>
+
+void MzHarmonicSpectrum::generateMidiNoteList(std::vector&lt;std::string&gt;& alist,
+	int minval, int maxval) {
+
+   alist.clear();
+
+   if (maxval &lt; minval) {
+      std::swap(maxval, minval);
+   }
+
+   int i;
+   int octave;
+   int pc;
+   char buffer[32] = {0};
+   for (i=minval; i&lt;=maxval; i++) {
+      octave = i / 12;
+      pc = i - octave * 12;
+      octave = octave - 1;  <font color=#229933>// Make middle C (60) = C4</font>
+      switch (pc) {
+         case 0:   sprintf(buffer, "C%d",  octave); break;
+         case 1:   sprintf(buffer, "C#%d", octave); break;
+         case 2:   sprintf(buffer, "D%d",  octave); break;
+         case 3:   sprintf(buffer, "D#%d", octave); break;
+         case 4:   sprintf(buffer, "E%d",  octave); break;
+         case 5:   sprintf(buffer, "F%d",  octave); break;
+         case 6:   sprintf(buffer, "F#%d", octave); break;
+         case 7:   sprintf(buffer, "G%d",  octave); break;
+         case 8:   sprintf(buffer, "G#%d", octave); break;
+         case 9:   sprintf(buffer, "A%d",  octave); break;
+         case 10:  sprintf(buffer, "A#%d", octave); break;
+         case 11:  sprintf(buffer, "B%d",  octave); break;
+         default:  sprintf(buffer, "x%d", i);
+      }
+      alist.push_back(buffer);
+   }
+}
+
+
+</pre>
+
+
+</td></tr>
+</table>
+</center>
+
+
+
+
+</body>
+</html>
+   

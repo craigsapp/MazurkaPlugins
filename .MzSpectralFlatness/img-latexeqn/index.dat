@@ -1,0 +1,92 @@
+@BEGIN:	SVPLUGIN
+
+@NAME: MzSpectralFlatness
+@APROPOS: Measure the spectral flatness of a signal
+
+@SUMMARY:  
+
+
+@BEGIN:	PARAMETERS
+
+@PARAMETER01: Window Size: 
+		The size of the audio analysis window in samples for 
+		calculating underlying spectra.  Window sizes under 
+		1024 samples do not seem to be useful for calculating 
+		the spectral flux.  Larger window sizes do seem to 
+		reduce some noise due to beating of partials in 
+		pitched music.
+
+@PARAMETER02: Step Size: 
+		The number of samples between analysis window starting
+		points.  The peak-finding algorithm is currently optimized
+		to a step size of 10 milliseconds which corresponds
+		to 441 samples when the sampling rate is 44100 Hz.
+		Probably not useful to alter this value since some of the
+		peak finding parameters are not yet adjustable by the user.
+
+@END:	PARAMETERS
+
+
+@BEGIN:	OUTPUTS
+
+@OUTPUT01: Spectral Flatness:
+	This is the raw spectral flatness value at each point 
+	in the audio signal.
+
+@OUTPUT02: Smoothed Spectral Flatness:
+	The exponentially smoothed spectral flatness value 
+	at each point in the audio signal.
+
+@OUTPUT03: Geometric Mean:
+	The geometric mean of the spectrum which is the numerator
+	in the spectral flatness calculation.
+
+@OUTPUT04: Arithmetic Mean:
+	The arithmetic mean of the spectrum which is the denominator
+	in the spectral flatness calculation.
+
+
+@END:	OUTPUTS
+
+
+@DESCRIPTION:  
+
+
+<h2>Spectral flatness<hr noshade></h2>
+
+Spectral flatness is a measure of noise vs. sinewaves in an audio signal.
+A low value of flatness indicates the presence of sinewaves in the audio 
+signal, and high values indicate the presence of noise.
+
+<p>
+
+<center>
+<img src=img-latexeqn/spectralflux.png  border=0>
+<!--
+<div id=latexeqn name=spectralflux size=+1>
+\mbox{spectral flatness} & = & \frac{\mbox{\scriptsize geometric mean}}{\mbox{\scriptsize arithmetic mean}} \\
+%   & =  & \frac{\left(\displaystyle\prod_k x(k)\right)^{1/N}} {\frac{1}{N} \displaystyle\sum_k x(k)} \\
+   & =  & \frac{\sqrt[N]{\displaystyle\prod_k x(k)}} {\frac{1}{N} \displaystyle\sum_k x(k)}
+</div>
+-->
+
+</center>
+Where <i>x</i> is a spectrum, <i>k</i> is an index into the spectrum, and
+<i>N</i> is the number of (non-zero) elements in the spectrum.
+
+
+@LIMITATIONS: 
+ 
+@BUGS:  
+
+@SEEALSO: 
+
+@BEGIN:	REFERENCES
+
+@REFERENCE:
+
+<a href=http://en.wikipedia.org/wiki/Spectral_flatness>http://en.wikipedia.org/wiki/Spectral_flatness</a>
+
+@END:	REFERENCES
+
+@END:	SVPLUGIN

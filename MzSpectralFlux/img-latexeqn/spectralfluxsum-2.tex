@@ -1,0 +1,16 @@
+\documentclass{article} 
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{bm}
+\newcommand{\mx}[1]{\mathbf{\bm{#1}}} % Matrix command
+\newcommand{\vc}[1]{\mathbf{\bm{#1}}} % Vector command 
+\newcommand{\T}{\text{T}}             % Transpose
+\pagestyle{empty} 
+\begin{document} 
+\begin{eqnarray*}
+\mbox{SF}_p(n) & = & \left| X_k(n) - X_k(n-1) \right|_p \\
+   & =  & \left( \sum_k |X(n,k) - X(n-1,k)|^p \right)^{1/p}
+\end{eqnarray*}
+ \newpage 
+\end{document}

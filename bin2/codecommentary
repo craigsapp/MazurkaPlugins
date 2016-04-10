@@ -1,0 +1,420 @@
+#!/usr/bin/perl
+#
+# Programmer:    Craig Stuart Sapp <craig@ccrma.stanford.edu>
+# Creation Date: Tue May  9 19:23:07 PDT 2000
+# Last Modified: Wed May 10 23:39:55 PDT 2006 (converted to vamp plugins)
+# Last Modified: Wed Mar  9 21:51:20 PST 2005 (fixed small comment bug)
+# Filename:      .../sig/maint/bin/codecommentary
+# Syntax:        perl 5
+#
+# Description:   Takes an example program and colorized it and
+#		 adds hyperlinks.
+#
+
+use strict;
+
+my $webIncludeDir = "http://sv.mazurka.org.uk";
+
+my $date = `date`;
+
+if (@ARGV != 1) {
+   print "Usage: $0 example.cpp\n";
+   exit(1);
+}
+
+my %FUNCTIONNAMES;
+
+my $includeDir = ".";
+my $filename   = $ARGV[0];
+
+my $filenamebase;
+if ($filename =~ /\//) {
+   $filenamebase = $filename;
+   $filenamebase =~ s/.*\///;
+} else {
+   $filenamebase = $filename;
+}
+my $filedirectory = $filename;
+$filedirectory =~ s/$filenamebase//;
+
+
+open(FILE, "$filename");
+my @contents = <FILE>;
+my @nocomments = @contents;
+my @output = @contents;
+
+my @functionsDefined;
+
+# analyze the structure of the code:
+
+encodeAngles();
+encodeURLs();
+encodeIncludeDefines();
+markComments("#229933");
+encodeFunctionNameMarkers();
+markMultiLineComments("#992233");
+markIncludes("#223399");
+markFunctionNames("#000000");
+linkToFunctions();
+
+# print the results:
+
+printHeader();
+# printFunctionIndex();
+print "<pre>\n";
+print @output;
+print "</pre>\n";
+printTrailer();
+
+exit(0);
+
+###########################################################################
+
+
+##############################
+##
+## encodeIncludeDefines --
+##
+
+sub encodeFunctionNameMarkers {
+   my $i;
+   my $class;
+   my $fun;
+   my $counter;
+   for ($i=0; $i<@output; $i++) {
+      if ($output[$i] =~ /(\/\/ +)([A-Za-z0-9:\~]+)(\s--)/) {
+         my $pre    = $`;
+         my $post   = $';
+         my $first  = $1;
+         my $second = $2;
+         my $third  = $3;
+         my $functionname = $second;
+         if ($functionname =~ /(.*)::(.*)/) {
+            $class = $1;
+            $fun = $2;
+            if ($class eq $fun) {
+               $functionname = "constructor";
+            } elsif ("~$class" eq $fun) {
+               $functionname = "destructor";
+            } else {
+               $functionname = $fun;
+            }
+         }
+         if ($FUNCTIONNAMES{$functionname} != 0) {
+            $counter = $FUNCTIONNAMES{$functionname};
+         } else {
+            $counter = "";
+         }
+         $FUNCTIONNAMES{$functionname} += 1;
+
+         $output[$i] = "$pre$first<b>$second<\/b>$third$post";
+         $output[$i-3] = "<a name=$functionname$counter>$output[$i-3]</a>";
+      }
+   }
+
+
+}
+
+
+
+##############################
+##
+## encodeIncludeDefines --
+##
+
+sub encodeIncludeDefines {
+   my $i;
+   my $html;
+   for ($i=0; $i<@output; $i++) {
+      if ($output[$i] =~ /_.*_INCLUDED/) {
+         chomp $output[$i];
+         $output[$i] = "<font color=#cccccc>$output[$i]</font>\n";
+      }
+   }
+}
+
+
+
+##############################
+##
+## encodeAngles -- change < to &lt; and > to &gt;
+##
+
+##############################
+##
+## encodeURLS --
+##
+
+sub encodeURLs {
+   my $i;
+   my $html;
+   for ($i=0; $i<@output; $i++) {
+      if ($output[$i] =~ /(http:\/\/[^ \t\n]+)/) {
+         $html = $1;
+         $output[$i] = "$`<a href=$html>$html</a>$'";
+      }
+   }
+}
+
+
+
+##############################
+##
+## encodeAngles -- change < to &lt; and > to &gt;
+##
+
+sub encodeAngles {
+   my $i;
+   for ($i=0; $i<@output; $i++) {
+      $output[$i] =~ s/</&lt;/g;
+      $output[$i] =~ s/>/&gt;/g;
+   }
+}
+
+
+
+##############################
+##
+## linkToFunctions -- hyperlink to functions when they are called.
+##
+
+sub linkToFunctions {
+   my $i;
+   my $j;
+   my $value;
+   for ($i=0; $i<@output; $i++) {
+      for ($j=0; $j<@functionsDefined; $j++) {
+         $value = $functionsDefined[$j];
+         if ($output[$i] =~ /[^>]$value\s*\(/) {
+            $output[$i] =~ /(.*)($value)(\s*\(.*)/;
+            $output[$i] = "$1<a href=#$value>$2</a>$3\n";
+         }
+         if ($output[$i] =~ /[^>]$value\s*\(/) {
+            $output[$i] =~ /(.*)($value)(\s*\(.*)/;
+            $output[$i] = "$1<a href=#$value>$2</a>$3\n";
+         }
+         if ($output[$i] =~ /[^>]$value\s*\(/) {
+            $output[$i] =~ /(.*)($value)(\s*\(.*)/;
+            $output[$i] = "$1<a href=#$value>$2</a>$3\n";
+         }
+         if ($output[$i] =~ /[^>]$value\s*\(/) {
+            $output[$i] =~ /(.*)($value)(\s*\(.*)/;
+            $output[$i] = "$1<a href=#$value>$2</a>$3\n";
+         }
+      }
+   }
+}
+
+
+
+##############################
+##
+## markComments -- mark the comments in the file
+##
+
+sub markComments {
+   my ($color) = @_;
+   my $i;
+   for ($i=0; $i<@output; $i++) {
+      if ($output[$i] =~ /^(\/\/.*)\n/) {
+         $nocomments[$i] =~ s/\/\/.*/\n/;
+         $output[$i] =~ /^(\/\/.*)\n/;
+         $output[$i] = "<font color=$color>" . $1 . "</font>\n";
+      } elsif ($output[$i] =~ /([^\/].*)(\/\/.*)\n/) {
+         $nocomments[$i] =~ s/\/\/.*/\n/;
+         $output[$i] =~ /(.*)(\/\/.*)\n/;
+         $output[$i] = $1 . "<font color=$color>" . $2 . "</font>\n";
+      }
+   }
+}
+
+
+##############################
+##
+## markFunctionNames -- Mark the names of functions
+##
+
+sub markFunctionNames {
+   my ($color) = @_;
+   my $i;
+   my $level = 0;
+   my $oldlevel = 0;
+   my @dummyL;
+   my @dummyR;
+   for ($i=0; $i<@output; $i++) {
+      @dummyL = split(/\{/, $nocomments[$i]);
+      @dummyR = split(/\}/, $nocomments[$i]);
+      $oldlevel = $level;
+      $level = $oldlevel + @dummyL - @dummyR;
+      if ($oldlevel == 0 && $level > 0) {
+         if ($nocomments[$i] =~
+               /(.*)\s([a-zA-Z][a-zA-Z0-9_]*)\s*(\([^\)]+\)\s*{.*)/) {
+            $output[$i] = $1 . "<a name=$2> </a><font color=$color><b>" . $2 .
+               "</b></font>" . $3 . "\n";
+            $functionsDefined[@functionsDefined] = $2;
+         }
+      } elsif ($level == 0) {
+         if ($nocomments[$i] =~ /([^\(]*)\s([a-zA-Z][a-zA-Z0-9]*)\s*(\(.*)/) {
+            if ($output[$i] =~ /;/) {
+               $output[$i] =~ /([^\(]*)\s([a-zA-Z][a-zA-Z0-9]*)\s*(\(.*)/;
+               $output[$i] = $1 . " <a href=#$2>" . $2 .  "</a>" . $3 . "\n";
+            } else {
+               $output[$i] =~ /([^\(]*)\s([a-zA-Z][a-zA-Z0-9]*)\s*(\(.*)/;
+               $output[$i] = $1 . "<a name=$2> </a><font color=$color><b>" . 
+               $2 .  "</b></font>" . $3 . "\n";
+               $functionsDefined[@functionsDefined] = $2;
+            }
+         }
+      }
+   }
+}
+
+
+
+##############################
+##
+## markIncludes -- Mark included files if they exist.
+##
+
+sub markIncludes {
+   my ($color) = @_;
+   my ($part1, $part2, $part3);
+   my $i;
+   my $basename;
+   for ($i=0; $i<@output; $i++) {
+      if ($output[$i] =~ /(\s*\#include\s+\")([^ \"]+)(\".*)/) {
+         $part1 = $1; $part2 = $2; $part3 = $3; 
+         $basename = $part2;
+         $basename =~ s/\.[^\.]*$//;
+
+         if (-r "$includeDir/$basename.h.html") {
+            $output[$i] = $part1 . 
+                         "<a href=$webIncludeDir/$basename/src/$part2.html>" . 
+                       $part2 . "</a>" .  $part3 . "\n";
+         } elsif (-r "$includeDir/$basename.h") {
+            $output[$i] = $part1 . 
+                         "<a href=$webIncludeDir/$basename/src/$part2>" . 
+                       $part2 . "</a>" .  $part3 . "\n";
+         }
+
+      }
+   }
+}
+
+
+
+##############################
+##
+## markMultiLineComments --
+##
+
+sub markMultiLineComments {
+   my ($color) = @_;
+   my $i;
+   for ($i=0; $i<@output; $i++) {
+      if ($output[$i] =~ /(.*)(\/\*.*)/) {
+         $output[$i] = $1 . "<font color=$color>" . $2;
+      }
+      if ($output[$i] =~ /(.*\*\/)(.*)/) {
+         $output[$i] = $1 . "</font>" . $2 . "\n";
+      }
+   }
+}
+
+
+
+##############################
+##
+## printFunctionIndex -- print a list of functions defined in 
+##   the current program.
+##
+
+sub printFunctionIndex {
+   my $i;
+   my $value;
+   @functionsDefined = sort @functionsDefined;
+   print " [ ";
+   for ($i=0; $i<@functionsDefined; $i++) {
+      $value = $functionsDefined[$i];
+      print "<a href=\#$value>$value</a> \n";
+      if ($i != @functionsDefined - 1) {
+         print " \| ";
+      }
+   }
+   print " ] ";
+   print "<hr noshade>\n";
+}
+
+
+
+##############################
+##
+## printHeader -- print the header of the html file.
+##
+
+sub printHeader {
+
+print <<"EOT";
+<!---------------------------------------------------------------------------->
+<html>
+<head>
+<title> Sig++ example program: $filenamebase </title>
+<meta name="Document-Owner" content="Craig Sapp (craig\@ccrma.stanford.edu)"> 
+<meta name="Author" content="Craig Stuart Sapp (craig\@ccrma.stanford.edu)">
+<meta name="Creation-Date" content=" Tue May  9 19:38:11 PDT 2000 ">
+<meta name="Revision-Date" content=" $date ">
+</head>
+
+<body bgcolor=#ffffff alink=#333399 link=#333399 vlink=#333399 text=#220000>
+<!-- header *************************************************** -->
+
+<center>
+<table width=760 cellpadding=0 cellspacing=0 border=0>
+<tr valign=top>
+<td>
+   <a href=http://www.charm.rhul.ac.uk><img alt="" border=0 src=../../images/logo.gif></a>
+</td>
+<td>
+   <a href=http://mazurka.org.uk><img alt="" border=0 src=../../images/banner.gif></a>
+</td>
+</tr>
+</table>
+</center>
+
+<center>
+<table><tr><td>
+
+
+EOT
+
+
+
+
+}
+
+
+
+##############################
+##
+## printTrailer -- print the trailer of the html file.
+##
+
+sub printTrailer {
+print <<"EOT";
+
+
+</td></tr>
+</table>
+</center>
+
+
+
+
+</body>
+</html>
+   
+EOT
+}
+
+
+

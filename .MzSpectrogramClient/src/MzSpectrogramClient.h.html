@@ -1,0 +1,123 @@
+<!---------------------------------------------------------------------------->
+<html>
+<head>
+<title> Sig++ example program: MzSpectrogramClient.h </title>
+<meta name="Document-Owner" content="Craig Sapp (craig@ccrma.stanford.edu)"> 
+<meta name="Author" content="Craig Stuart Sapp (craig@ccrma.stanford.edu)">
+<meta name="Creation-Date" content=" Tue May  9 19:38:11 PDT 2000 ">
+<meta name="Revision-Date" content=" Wed Dec 27 07:42:42 PST 2006
+ ">
+</head>
+
+<body bgcolor=#ffffff alink=#333399 link=#333399 vlink=#333399 text=#220000>
+<!-- header *************************************************** -->
+
+<center>
+<table width=760 cellpadding=0 cellspacing=0 border=0>
+<tr valign=top>
+<td>
+   <a href=http://www.charm.rhul.ac.uk><img alt="" border=0 src=../../images/logo.gif></a>
+</td>
+<td>
+   <a href=http://mazurka.org.uk><img alt="" border=0 src=../../images/banner.gif></a>
+</td>
+</tr>
+</table>
+</center>
+
+<center>
+<table><tr><td>
+
+
+<pre>
+<font color=#229933>//</font>
+<font color=#229933>// Programmer:    Craig Stuart Sapp &lt;craig@ccrma.stanford.edu&gt;</font>
+<font color=#229933>// Creation Date: Fri May 12 23:39:17 PDT 2006</font>
+<font color=#229933>// Last Modified: Fri Jun 23 00:12:17 PDT 2006 (subclassed to MazurkaPlugin)</font>
+<font color=#229933>// Filename:      MzSpectrogramClient.h</font>
+<font color=#229933>// URL:           <a href=http://sv.mazurka.org.uk/include/MzSpectrogramClient.h>http://sv.mazurka.org.uk/include/MzSpectrogramClient.h</a></font>
+<font color=#229933>// Documentation: <a href=http://sv.mazurka.org.uk/MzSpectrogramClient>http://sv.mazurka.org.uk/MzSpectrogramClient</a></font>
+<font color=#229933>// Syntax:        ANSI99 C++; vamp 0.9 plugin</font>
+<font color=#229933>//</font>
+<font color=#229933>// Description:   Demonstration of how to create spectral data from time data</font>
+<font color=#229933>//                supplied by the host application.</font>
+<font color=#229933>// </font>
+
+<font color=#cccccc>#ifndef _MZSPECTROGRAMCLIENT_H_INCLUDED</font>
+<font color=#cccccc>#define _MZSPECTROGRAMCLIENT_H_INCLUDED</font>
+
+#include "MazurkaPlugin.h"  <font color=#229933>// Mazurka plugin interface for Sonic Visualiser</font>
+
+
+class MzSpectrogramClient : public MazurkaPlugin {
+
+   public: 
+
+   <font color=#229933>// plugin interface functions:</font>
+
+                    MzSpectrogramClient   (float samplerate);
+      virtual      ~MzSpectrogramClient   ();
+
+      <font color=#229933>// required polymorphic functions inherited from PluginBase:</font>
+      std::string   getName               (void) const;
+      std::string   getMaker              (void) const;
+      std::string   getCopyright          (void) const;
+      std::string   getDescription        (void) const;
+      int           getPluginVersion      (void) const;
+
+      <font color=#229933>// optional parameter interface functions:</font>
+      ParameterList getParameterDescriptors (void) const;
+
+      <font color=#229933>// required polymorphic functions inherited from Plugin:</font>
+      InputDomain   getInputDomain        (void) const;
+      OutputList    getOutputDescriptors  (void) const;
+      bool          initialise            (size_t channels, 
+                                           size_t stepsize, 
+                                           size_t blocksize);
+      FeatureSet    process               (float **inputbufs, 
+                                           Vamp::RealTime timestamp);
+      FeatureSet    getRemainingFeatures  (void);
+      void          reset                 (void);
+
+      <font color=#229933>// optional polymorphic functions from Plugin:</font>
+      <font color=#229933>// size_t     getPreferredStepSize  (void) const { return 0; }</font>
+      <font color=#229933>// size_t     getPreferredBlockSize (void) const { return 0; }</font>
+      <font color=#229933>// size_t     getMinChannelCount    (void) const { return 1; }</font>
+      <font color=#229933>// size_t     getMaxChannelCount    (void) const { return 1; }</font>
+
+
+   <font color=#229933>// non-interface functions and variables:</font>
+   
+      static void   makeHannWindow        (double* output, int blocksize);
+      static void   windowSignal          (double* output, double* window,
+		                           float* input, int blocksize);
+      static void   fft                   (int n, double *ri, double *ii, 
+		                           double *ro, double *io);
+
+   private: 
+
+      double* mz_signalbuffer;  <font color=#229933>// storage space for the windowed signal</font>
+      double* mz_windbuffer;    <font color=#229933>// storage space for the signal window</font>
+      double* mz_freqbuffer;    <font color=#229933>// storage space for the complex frequency bins</font>
+
+      int     mz_minbin;        <font color=#229933>// minimum spectral bin to display</font>
+      int     mz_maxbin;        <font color=#229933>// maximum spectral bin to display</font>
+      
+};
+
+
+<font color=#cccccc>#endif <font color=#229933>// _MZSPECTROGRAMCLIENT_H_INCLUDED</font></font>
+
+</pre>
+
+
+</td></tr>
+</table>
+</center>
+
+
+
+
+</body>
+</html>
+   

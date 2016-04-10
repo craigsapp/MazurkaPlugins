@@ -1,0 +1,1417 @@
+<!---------------------------------------------------------------------------->
+<html>
+<head>
+<title> Sig++ example program: MzSpectralFlux.cpp </title>
+<meta name="Document-Owner" content="Craig Sapp (craig@ccrma.stanford.edu)"> 
+<meta name="Author" content="Craig Stuart Sapp (craig@ccrma.stanford.edu)">
+<meta name="Creation-Date" content=" Tue May  9 19:38:11 PDT 2000 ">
+<meta name="Revision-Date" content=" Thu Jan  4 02:12:37 PST 2007
+ ">
+</head>
+
+<body bgcolor=#ffffff alink=#333399 link=#333399 vlink=#333399 text=#220000>
+<!-- header *************************************************** -->
+
+<center>
+<table width=760 cellpadding=0 cellspacing=0 border=0>
+<tr valign=top>
+<td>
+   <a href=http://www.charm.rhul.ac.uk><img alt="" border=0 src=../../images/logo.gif></a>
+</td>
+<td>
+   <a href=http://mazurka.org.uk><img alt="" border=0 src=../../images/banner.gif></a>
+</td>
+</tr>
+</table>
+</center>
+
+<center>
+<table><tr><td>
+
+
+<pre>
+<font color=#229933>//</font>
+<font color=#229933>// Programmer:    Craig Stuart Sapp &lt;craig@ccrma.stanford.edu&gt;</font>
+<font color=#229933>// Creation Date: Mon Dec 18 20:37:48 PST 2006</font>
+<font color=#229933>// Last Modified: Wed Jan  3 06:09:24 PST 2007</font>
+<font color=#229933>// Filename:      MzSpectralFlux.cpp</font>
+<font color=#229933>// URL:           <a href=http://sv.mazurka.org.uk/src/MzSpectralFlux.cpp>http://sv.mazurka.org.uk/src/MzSpectralFlux.cpp</a></font>
+<font color=#229933>// Documentation: <a href=http://sv.mazurka.org.uk/MzSpectralFlux>http://sv.mazurka.org.uk/MzSpectralFlux</a></font>
+<font color=#229933>// Syntax:        ANSI99 C++; vamp plugin</font>
+<font color=#229933>//</font>
+<font color=#229933>// Description:   Generate various forms and steps in the process of</font>
+<font color=#229933>//                of calculating spectral flux.</font>
+<font color=#229933>//</font>
+<font color=#229933>// Reference:     <a href=http://en.wikipedia.org/wiki/Spectral_flux>http://en.wikipedia.org/wiki/Spectral_flux</a></font>
+<font color=#229933>//</font>
+
+#include "MzSpectralFlux.h" 
+
+#include &lt;stdio.h&gt;
+#include &lt;math.h&gt;
+
+#include &lt;string&gt;
+
+<font color=#229933>// Defines used in getPluginVersion():</font>
+#define P_VER    "200612280"
+#define P_NAME   "MzSpectralFlux"
+
+<font color=#229933>// Type of spectral flux measurement:</font>
+#define SLOPE_ALL           0
+#define SLOPE_POSITIVE      1
+#define SLOPE_NEGATIVE      2
+#define SLOPE_DIFFERENCE    3
+#define SLOPE_COMPOSITE     4
+#define SLOPE_PRODUCT       5
+#define SLOPE_ANGULAR       6
+#define SLOPE_COSINE        7
+
+<font color=#229933>// Type of magnitude spectrum for calculating spectral derivative:</font>
+#define SPECTRUM_DFT        0
+#define SPECTRUM_LOWDFT     1
+#define SPECTRUM_HIDFT      2
+#define SPECTRUM_MIDI       3
+
+using namespace std;        <font color=#229933>// avoid stupid std:: prefixing</font>
+
+<font color=#229933>///////////////////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// Vamp Interface Functions</font>
+<font color=#229933>//</font>
+<a name=constructor>
+</a><font color=#229933>///////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::MzSpectralFlux</b> -- class constructor.  The values</font>
+<font color=#229933>//   for the mz_* variables are just place holders demonstrating the</font>
+<font color=#229933>//   default value.  These variables will be set in the initialise()</font>
+<font color=#229933>//   function from the user interface.</font>
+<font color=#229933>//</font>
+
+MzSpectralFlux::MzSpectralFlux(float samplerate) : 
+     <a name=MazurkaPlugin> </a><font color=#000000><b>MazurkaPlugin</b></font>(samplerate) {
+   mz_slope  = SLOPE_POSITIVE;   <font color=#229933>// consider positive spectral derivative</font>
+   mz_stype  = SPECTRUM_MIDI;    <font color=#229933>// use MIDI spectrum by default</font>
+   mz_pnorm  = 2.0;              <font color=#229933>// for calculating spectral difference norm</font>
+   mz_delta  = 0.45;             <font color=#229933>// higher value gives more false negatives</font>
+   mz_alpha  = 0.90;             <font color=#229933>// higher values gives few false positives</font>
+}
+
+
+<a name=destructor>
+</a><font color=#229933>///////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::~MzSpectralFlux</b> -- class destructor.</font>
+<font color=#229933>//</font>
+
+MzSpectralFlux::~MzSpectralFlux() {
+   <font color=#229933>// do nothing</font>
+}
+
+
+<font color=#229933>////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// parameter functions --</font>
+<font color=#229933>//</font>
+<a name=getParameterDescriptors>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::getParameterDescriptors</b> -- return a list of</font>
+<font color=#229933>//      the parameters which can control the plugin.</font>
+<font color=#229933>//</font>
+
+MzSpectralFlux::ParameterList 
+MzSpectralFlux::getParameterDescriptors(void) const {
+
+   ParameterList       pdlist;
+   ParameterDescriptor pd;
+
+   <font color=#229933>// first parameter: Number of samples in the audio window</font>
+   pd.name         = "windowsamples";
+   pd.description  = "Window Size";
+   pd.unit         = "samples";
+   pd.minValue     = 2.0;
+   pd.maxValue     = 10000;
+   pd.defaultValue = 2048.0;
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+   pd.valueNames.clear();
+
+   <font color=#229933>// second parameter: Step size between analysis windows</font>
+   pd.name         = "stepsamples";
+   pd.description  = "Step Size";
+   pd.unit         = "samples";
+   pd.minValue     = 2.0;
+   pd.maxValue     = 30000.0;
+   pd.defaultValue = 441.0; 
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+   pd.valueNames.clear();
+
+   <font color=#229933>// third parameter: Slope limiting for adjusting spectral derivative</font>
+   pd.name         = "fluxtype";
+   pd.description  = "Flux Type";
+   pd.unit         = "";
+   pd.minValue     = 0.0;
+   pd.maxValue     = 7.0;
+   pd.valueNames.push_back("Total Flux");
+   pd.valueNames.push_back("Positive Flux");
+   pd.valueNames.push_back("Negative Flux");
+   pd.valueNames.push_back("Difference Flux");
+   pd.valueNames.push_back("Composite Flux");
+   pd.valueNames.push_back("Product Flux");
+   pd.valueNames.push_back("Angular Flux");
+   pd.valueNames.push_back("Cosine Flux");
+   pd.defaultValue = 1.0; 
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+   pd.valueNames.clear();
+
+   <font color=#229933>// fourth parameter: Spectral smoothing</font>
+   pd.name         = "smooth";
+   pd.description  = "Spectral\nSmoothing";
+   pd.unit         = "";
+   pd.minValue     = 0.0;
+   pd.maxValue     = 1.0;
+   pd.defaultValue = 0.0; 
+   pd.isQuantized  = false;
+   <font color=#229933>// pd.quantizeStep = 1.0;</font>
+   pdlist.push_back(pd);
+   pd.valueNames.clear();
+
+   <font color=#229933>// fifth parameter: p-Norm Order</font>
+   pd.name         = "pnorm";
+   pd.description  = "Norm Order";
+   pd.unit         = "";
+   pd.minValue     = 0.0;
+   pd.maxValue     = +100.0;
+   pd.defaultValue = 1.0; 
+   pd.isQuantized  = false;
+   <font color=#229933>// pd.quantizeStep = 1.0;</font>
+   pdlist.push_back(pd);
+   pd.valueNames.clear();
+
+   <font color=#229933>// sixth parameter: Magnitude spectrum type for calculating spectral flux</font>
+   pd.name         = "spectrum";
+   pd.description  = "Magnitude\nSpectrum";
+   pd.unit         = "";
+   pd.minValue     = 0.0;
+   pd.maxValue     = 3.0;
+   pd.valueNames.push_back("DFT");
+   pd.valueNames.push_back("Low DFT");
+   pd.valueNames.push_back("High DFT");
+   pd.valueNames.push_back("MIDI");
+   pd.defaultValue = 3.0; 
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+   pd.valueNames.clear();
+
+   <font color=#229933>// seventh parameter: Local mean threshold for peak identification</font>
+   pd.name         = "delta";
+   pd.description  = "Local Mean\nThreshold";
+   pd.unit         = "";
+   pd.minValue     = 0.0;
+   pd.maxValue     = 100.0;
+   pd.defaultValue = 0.45;
+   pd.isQuantized  = false;
+   <font color=#229933>// pd.quantizeStep = 1.0;</font>
+   pdlist.push_back(pd);
+   pd.valueNames.clear();
+
+   <font color=#229933>// eighth parameter: Threshold function feedback gain</font>
+   pd.name         = "alpha";
+   pd.description  = "Exponential\nDecay Factor";
+   pd.unit         = "";
+   pd.minValue     = 0.0;
+   pd.maxValue     = 0.999;
+   pd.defaultValue = 0.90;
+   pd.isQuantized  = false;
+   <font color=#229933>// pd.quantizeStep = 1.0;</font>
+   pdlist.push_back(pd);
+   pd.valueNames.clear();
+
+   return pdlist;
+}
+
+
+<font color=#229933>////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// optional polymorphic functions inherited from PluginBase:</font>
+<font color=#229933>//</font>
+<a name=getPreferredStepSize>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::getPreferredStepSize</b> -- overrides the </font>
+<font color=#229933>//     default value of 0 (no preference) returned in the </font>
+<font color=#229933>//     inherited plugin class.</font>
+<font color=#229933>//</font>
+
+size_t MzSpectralFlux::getPreferredStepSize(void) const {
+   return getParameterInt("stepsamples");
+}
+
+
+<a name=getPreferredBlockSize>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::getPreferredBlockSize</b> -- overrides the </font>
+<font color=#229933>//     default value of 0 (no preference) returned in the </font>
+<font color=#229933>//     inherited plugin class.</font>
+<font color=#229933>//</font>
+
+size_t MzSpectralFlux::getPreferredBlockSize(void) const {
+   return getParameterInt("windowsamples");
+}
+
+
+<font color=#229933>////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// required polymorphic functions inherited from PluginBase:</font>
+<font color=#229933>//</font>
+
+std::string MzSpectralFlux::getName(void) const
+{ return "mzspectralflux"; }
+
+std::string MzSpectralFlux::getMaker(void) const
+{ return "The Mazurka Project"; }
+
+std::string MzSpectralFlux::getCopyright(void) const
+{ return "2006 Craig Stuart Sapp"; }
+
+std::string MzSpectralFlux::getDescription(void) const
+{ return "Spectral Flux"; }
+
+int MzSpectralFlux::getPluginVersion(void) const {
+   const char *v = "@@VampPluginID@" P_NAME "@" P_VER "@" __DATE__ "@@";
+   if (v[0] != '@') { std::cerr &lt;&lt; v &lt;&lt; std::endl; return 0; }
+   return atol(P_VER);
+}
+
+
+<font color=#229933>////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// required polymorphic functions inherited from Plugin:</font>
+<font color=#229933>//</font>
+<a name=getInputDomain>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::getInputDomain</b> -- the host application needs</font>
+<font color=#229933>//    to know if it should send either:</font>
+<font color=#229933>//</font>
+<font color=#229933>// TimeDomain      == Time samples from the audio waveform.</font>
+<font color=#229933>// FrequencyDomain == Spectral frequency frames which will arrive</font>
+<font color=#229933>//                    in an array of interleaved real, imaginary</font>
+<font color=#229933>//                    values for the complex spectrum (both positive </font>
+<font color=#229933>//                    and negative frequencies). Zero Hz being the</font>
+<font color=#229933>//                    first frequency sample and negative frequencies</font>
+<font color=#229933>//                    at the far end of the array as is usually done.</font>
+<font color=#229933>//                    Note that frequency data is transmitted from</font>
+<font color=#229933>//                    the host application as floats.  The data will</font>
+<font color=#229933>//                    be transmitted via the process() function which</font>
+<font color=#229933>//                    is defined further below.</font>
+<font color=#229933>//</font>
+
+MzSpectralFlux::InputDomain MzSpectralFlux::getInputDomain(void) const { 
+   return TimeDomain; 
+}
+
+
+<a name=getOutputDescriptors>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::getOutputDescriptors</b> -- return a list describing</font>
+<font color=#229933>//    each of the available outputs for the object.  OutputList</font>
+<font color=#229933>//    is defined in the file vamp-sdk/Plugin.h:</font>
+<font color=#229933>//</font>
+<font color=#229933>// .name             == short name of output for computer use.  Must not</font>
+<font color=#229933>//                      contain spaces or punctuation.</font>
+<font color=#229933>// .description      == long name of output for human use.</font>
+<font color=#229933>// .unit             == the units or basic meaning of the data in the </font>
+<font color=#229933>//                      specified output.</font>
+<font color=#229933>// .hasFixedBinCount == true if each output feature (sample) has the </font>
+<font color=#229933>//                      same dimension.</font>
+<font color=#229933>// .binCount         == when hasFixedBinCount is true, then this is the </font>
+<font color=#229933>//                      number of values in each output feature.  </font>
+<font color=#229933>//                      binCount=0 if timestamps are the only features,</font>
+<font color=#229933>//                      and they have no labels.</font>
+<font color=#229933>// .binNames         == optional description of each bin in a feature.</font>
+<font color=#229933>// .hasKnownExtent   == true if there is a fixed minimum and maximum</font>
+<font color=#229933>//                      value for the range of the output.</font>
+<font color=#229933>// .minValue         == range minimum if hasKnownExtent is true.</font>
+<font color=#229933>// .maxValue         == range maximum if hasKnownExtent is true.</font>
+<font color=#229933>// .isQuantized      == true if the data values are quantized.  Ignored</font>
+<font color=#229933>//                      if binCount is set to zero.</font>
+<font color=#229933>// .quantizeStep     == if isQuantized, then the size of the quantization,</font>
+<font color=#229933>//                      such as 1.0 for integers.</font>
+<font color=#229933>// .sampleType       == Enumeration with three possibilities:</font>
+<font color=#229933>//   OD::OneSamplePerStep   -- output feature will be aligned with</font>
+<a name=VariableSampleRate><font color=#229933>//                             the beginning time of the input block data.</font>
+</a><font color=#229933>//   OD::FixedSampleRate    -- results are evenly spaced according to </font>
+<font color=#229933>//                             .sampleRate (see below).</font>
+<font color=#229933>//   <b>OD::VariableSampleRate</b> -- output features have individual timestamps.</font>
+<font color=#229933>// .sampleRate       == samples per second spacing of output features when</font>
+<font color=#229933>//                      sampleType is set toFixedSampleRate.</font>
+<font color=#229933>//                      Ignored if sampleType is set to OneSamplePerStep</font>
+<font color=#229933>//                      since the start time of the input block will be used.</font>
+<font color=#229933>//                      Usually set the sampleRate to 0.0 if VariableSampleRate</font>
+<font color=#229933>//                      is used; otherwise, see vamp-sdk/Plugin.h for what</font>
+<font color=#229933>//                      positive sampleRates would mean.</font>
+<font color=#229933>//</font>
+
+MzSpectralFlux::OutputList 
+MzSpectralFlux::getOutputDescriptors(void) const {
+
+   OutputList       odlist;
+   OutputDescriptor od;
+
+   std::string s;
+
+   int spectrumbincount = calculateSpectrumSize(mz_stype, getBlockSize(), 
+                                                          getSrate());
+
+   <font color=#229933>// First output channel: Underlying Spectral Data</font>
+   od.name             = "spectrum";
+   od.description      = "Basis Spectrum";
+   od.unit             = "bin";
+   od.hasFixedBinCount = true;
+   od.binCount         = spectrumbincount;
+   od.hasKnownExtents  = false;
+   od.isQuantized      = false;
+   <font color=#229933>// od.quantizeStep  = 1.0;</font>
+   od.sampleType       = OutputDescriptor::OneSamplePerStep;
+   <font color=#229933>// od.sampleRate    = 0.0;</font>
+   odlist.push_back(od);
+   #define OUTPUT_SPECTRUM 0
+   od.binNames.clear();
+
+   <font color=#229933>// Second output channel: Spectrum Derivative</font>
+   od.name             = "spectrumderivative";
+   od.description      = "Spectrum Derivative";
+   od.unit             = "bin";
+   od.hasFixedBinCount = true;
+   od.binCount         = spectrumbincount;
+   od.hasKnownExtents  = false;
+   od.isQuantized      = false;
+   <font color=#229933>// od.quantizeStep  = 1.0;</font>
+   od.sampleType       = OutputDescriptor::OneSamplePerStep;
+   <font color=#229933>// od.sampleRate    = 0.0;</font>
+   odlist.push_back(od);
+   #define OUTPUT_DERIVATIVE 1
+   od.binNames.clear();
+
+   <font color=#229933>// Third output channel: Raw Spectral Flux Function</font>
+   od.name             = "rawspectralflux";
+   od.description      = "Raw Spectral Flux Function";
+   od.unit             = "raw";
+   od.hasFixedBinCount = true;
+   od.binCount         = 1;
+   od.hasKnownExtents  = false;
+   <font color=#229933>// od.minValue      = 0.0;</font>
+   <font color=#229933>// od.maxValue      = 1.0;</font>
+   od.isQuantized      = false;
+   <font color=#229933>// od.quantizeStep  = 1.0;</font>
+   od.sampleType       = OutputDescriptor::VariableSampleRate;
+   <font color=#229933>// od.sampleRate    = 0.0;</font>
+   #define OUTPUT_RAW_FUNCTION 2
+   odlist.push_back(od);
+   od.binNames.clear();
+
+   <font color=#229933>// Fourth output channel: Scaled Spectral Flux Function</font>
+   od.name             = "scaledspectralflux";
+   od.description      = "Scaled Spectral Flux Function";
+   od.unit             = "scaled";
+   od.hasFixedBinCount = true;
+   od.binCount         = 1;
+   od.hasKnownExtents  = false;
+   <font color=#229933>// od.minValue      = 0.0;</font>
+   <font color=#229933>// od.maxValue      = 1.0;</font>
+   od.isQuantized      = false;
+   <font color=#229933>// od.quantizeStep  = 1.0;</font>
+   od.sampleType       = OutputDescriptor::VariableSampleRate;
+   <font color=#229933>// od.sampleRate    = 0.0;</font>
+   #define OUTPUT_SCALED_FUNCTION 3
+   odlist.push_back(od);
+   od.binNames.clear();
+
+   <font color=#229933>// Fifth output channel: Exponential Decay Threshold </font>
+   od.name             = "thresholdfunction";
+   od.description      = "Exponential Decay Threshold";
+   od.unit             = "scaled";
+   od.hasFixedBinCount = true;
+   od.binCount         = 1;
+   od.hasKnownExtents  = false;
+   <font color=#229933>// od.minValue      = 0.0;</font>
+   <font color=#229933>// od.maxValue      = 1.0;</font>
+   od.isQuantized      = false;
+   <font color=#229933>// od.quantizeStep  = 1.0;</font>
+   od.sampleType       = OutputDescriptor::VariableSampleRate;
+   <font color=#229933>// od.sampleRate    = 0.0;</font>
+   #define OUTPUT_THRESHOLD_FUNCTION 4
+   odlist.push_back(od);
+   od.binNames.clear();
+
+   <font color=#229933>// Sixth output channel: Mean Threshold Function</font>
+   od.name             = "meanfunction";
+   od.description      = "Local Mean Threshold";
+   od.unit             = "scaled";
+   od.hasFixedBinCount = true;
+   od.binCount         = 1;
+   od.hasKnownExtents  = false;
+   <font color=#229933>// od.minValue      = 0.0;</font>
+   <font color=#229933>// od.maxValue      = 1.0;</font>
+   od.isQuantized      = false;
+   <font color=#229933>// od.quantizeStep  = 1.0;</font>
+   od.sampleType       = OutputDescriptor::VariableSampleRate;
+   <font color=#229933>// od.sampleRate    = 0.0;</font>
+   #define OUTPUT_MEAN_FUNCTION 5
+   odlist.push_back(od);
+   od.binNames.clear();
+
+   <font color=#229933>// Seventh output channel: Detected Onset Times</font>
+   od.name             = "spectralfluxonsets";
+   od.description      = "Onset Times";
+   od.unit             = "";
+   od.hasFixedBinCount = true;
+   od.binCount         = 0;
+   od.hasKnownExtents  = false;
+   <font color=#229933>// od.minValue      = 0.0;</font>
+   <font color=#229933>// od.maxValue      = 1.0;</font>
+   od.isQuantized      = false;
+   <font color=#229933>// od.quantizeStep  = 1.0;</font>
+   od.sampleType       = OutputDescriptor::VariableSampleRate;
+   <font color=#229933>// od.sampleRate    = 0.0;</font>
+   #define OUTPUT_ONSETS 6
+   odlist.push_back(od);
+   od.binNames.clear();
+
+   return odlist; 
+}
+
+
+<a name=initialise>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::initialise</b> -- this function is called once</font>
+<font color=#229933>//     before the first call to process().</font>
+<font color=#229933>//</font>
+
+bool MzSpectralFlux::initialise(size_t channels, size_t stepsize, 
+      size_t blocksize) {
+
+   if (channels &lt; getMinChannelCount() || channels &gt; getMaxChannelCount()) {
+      return false;
+   }
+
+   <font color=#229933>// step size and block size should never be zero</font>
+   if (stepsize &lt;= 0 || blocksize &lt;= 0) {
+      return false;
+   }
+
+   setStepSize(stepsize);
+   setBlockSize(blocksize);
+   setChannelCount(channels);
+
+   mz_slope  = getParameterInt("fluxtype");
+   mz_stype  = getParameterInt("spectrum");
+   mz_delta  = getParameterDouble("delta");
+   mz_alpha  = getParameterDouble("alpha");
+   mz_pnorm  = getParameterDouble("pnorm");
+   mz_smooth = 1.0 - getParameterDouble("smooth");
+
+   mz_transformer.setSize(getBlockSize());
+   mz_transformer.zeroSignal();
+   mz_windower.setSize(getBlockSize());
+   mz_windower.makeWindow("Hann");
+
+   mz_rawfunction.resize(0);
+   mz_rawtimes.resize(0);
+
+   return true;
+}
+
+
+<a name=process>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::process</b> -- This function is called sequentially on the </font>
+<font color=#229933>//    input data, block by block.  After the sequence of blocks has been</font>
+<font color=#229933>//    processed with process(), the function getRemainingFeatures() will </font>
+<font color=#229933>//    be called.</font>
+<font color=#229933>//</font>
+<font color=#229933>// Here is a reference chart for the Feature struct:</font>
+<font color=#229933>//</font>
+<font color=#229933>// .hasTimestamp   == If the OutputDescriptor.sampleType is set to</font>
+<font color=#229933>//                    VariableSampleRate, then this should be "true".</font>
+<font color=#229933>// .timestamp      == The time at which the feature occurs in the time stream.</font>
+<font color=#229933>// .values         == The float values for the feature.  Should match</font>
+<font color=#229933>//                    OD::binCount.</font>
+<font color=#229933>// .label          == Text associated with the feature (for time instants).</font>
+<font color=#229933>//</font>
+
+MzSpectralFlux::FeatureSet MzSpectralFlux::process(float **inputbufs, 
+      Vamp::RealTime timestamp) {
+
+   if (getStepSize() &lt;= 0) {
+      std::cerr &lt;&lt; "ERROR: MzSpectralFlux::process: "
+                &lt;&lt; "MzSpectralFlux has not been initialized" &lt;&lt; std::endl;
+      return FeatureSet();
+   }
+
+   int i;
+   Feature    feature;
+   FeatureSet returnFeatures;
+
+   <font color=#229933>// calculate the the underlying spectrum data:</font>
+   mz_windower.windowNonCausal(mz_transformer, inputbufs[0], getBlockSize());
+   mz_transformer.doTransform();
+
+   <font color=#229933>// generate the variety of spectrum to be used to calculate spectral flux:</font>
+   vector&lt;double&gt; workingspectrum;
+   createWorkingSpectrum(workingspectrum, mz_transformer, getSrate(), 
+         mz_stype, mz_smooth);
+
+   <font color=#229933>// store the size of the spectrum:</font>
+   int framesize = (int)(workingspectrum.size());
+
+
+   //////////////////////////////////////////////////////////////////////<font color=#229933>//</font>
+   ///// store the plugin's FIRST output: the raw spectral data /////////<font color=#229933>//</font>
+   //////////////////////////////////////////////////////////////////////<font color=#229933>//</font>
+
+   feature.values.resize(framesize);
+   for (i=0; i&lt;framesize; i++) {
+      feature.values[i] = workingspectrum[i];
+   }
+   feature.hasTimestamp = false;
+   returnFeatures[OUTPUT_SPECTRUM].push_back(feature);
+
+
+   <font color=#229933>// Calculate the spectral derivative: the difference between</font>
+   <font color=#229933>// two sequential spectrums.</font>
+
+   vector&lt;double&gt; spectral_derivative;
+   spectral_derivative.resize(framesize);
+
+   <font color=#229933>// if the lastframe has not been initialized, then copy current spectrum </font>
+   <font color=#229933>// (or maybe set to zero if audio starts with an attack??)</font>
+   if (lastframe.size() == 0) {
+      lastframe.resize(framesize);
+      for (i=0; i&lt;framesize; i++) {
+         lastframe[i] = workingspectrum[i] / 2.0;
+      }
+   }
+
+   <font color=#229933>// selectively remove slopes from the spectral difference vector</font>
+   <font color=#229933>// depending on the type of spectral flux calculation being done:</font>
+   switch (mz_slope) {
+
+      case SLOPE_NEGATIVE:   <font color=#229933>// negative slopes only</font>
+         for (i=0; i&lt;framesize; i++) {
+            spectral_derivative[i] = workingspectrum[i] - lastframe[i];
+            if (spectral_derivative[i] &gt; 0.0) {
+               spectral_derivative[i] = 0.0;
+            }
+         }
+      break;
+
+      case SLOPE_PRODUCT:   <font color=#229933>// slope product rather than difference</font>
+         for (i=0; i&lt;framesize; i++) {
+            spectral_derivative[i] = workingspectrum[i] * lastframe[i];
+         }
+      break;
+
+      case SLOPE_ANGULAR:   <font color=#229933>// angle rather than difference</font>
+      case SLOPE_COSINE:    <font color=#229933>// angle rather than difference</font>
+         {
+         double asum = 0.0;
+         double bsum = 0.0;
+         double cval = 0.0;
+         for (i=0; i&lt;framesize; i++) {
+            asum += workingspectrum[i] * workingspectrum[i];
+            bsum += lastframe[i] * lastframe[i];
+         }
+         cval = sqrt(asum) * sqrt(bsum);
+         for (i=0; i&lt;framesize; i++) {
+            spectral_derivative[i] = workingspectrum[i] * lastframe[i] / cval;
+         }
+	 }
+      break;
+
+      case SLOPE_POSITIVE:    <font color=#229933>// positive slopes only</font>
+         for (i=0; i&lt;framesize; i++) {
+            spectral_derivative[i] = workingspectrum[i] - lastframe[i];
+            if (spectral_derivative[i] &lt; 0.0) {
+               spectral_derivative[i] = 0.0;
+            }
+         }
+      break;
+
+      case SLOPE_ALL:        <font color=#229933>// no selectivity</font>
+      case SLOPE_DIFFERENCE: <font color=#229933>// mixed selectivity so don't remove anything</font>
+      case SLOPE_COMPOSITE:  <font color=#229933>// mixed selectivity so don't remove anything</font>
+      default:
+         for (i=0; i&lt;framesize; i++) {
+            spectral_derivative[i] = workingspectrum[i] - lastframe[i];
+         }
+
+   }
+
+   <font color=#229933>// store the current spectrum so that it can be used next time:</font>
+   lastframe = workingspectrum;
+
+
+   //////////////////////////////////////////////////////////////////////<font color=#229933>//</font>
+   ///// store the plugin's SECOND output: spectral derivative  /////////<font color=#229933>//</font>
+   //////////////////////////////////////////////////////////////////////<font color=#229933>//</font>
+
+   <font color=#229933>// to make the data more visible, normalize each frame.</font>
+   <font color=#229933>// maybe consider sigmoiding it also...</font>
+   double normval = 0.0;
+   for (i=0; i&lt;framesize; i++) {
+      if (fabs(spectral_derivative[i]) &gt; normval) {
+         normval = fabs(spectral_derivative[i]);
+      }
+   }
+   if (normval == 0.0) {   <font color=#229933>// avoid any divide by zero problems</font>
+      normval = 1.0;
+   }
+
+   feature.values.resize(framesize);  
+   for (i=0; i&lt;framesize; i++) {
+      feature.values[i] = spectral_derivative[i] / normval;
+   }
+   feature.hasTimestamp = false;
+   returnFeatures[OUTPUT_DERIVATIVE].push_back(feature); 
+
+
+   //////////////////////////////////////////////////////////////////////<font color=#229933>//</font>
+   ///// store the plugin's THIRD output: spectral flux value   /////////<font color=#229933>//</font>
+   //////////////////////////////////////////////////////////////////////<font color=#229933>//</font>
+
+   double fluxvalue;
+   fluxvalue = getSpectralFlux(spectral_derivative, mz_slope, mz_pnorm); 
+
+   <font color=#229933>// the spectral flux is the difference between two spectral</font>
+   <font color=#229933>// frames, so it is best placed 1/2 of the way between the</font>
+   <font color=#229933>// center of each of the two spectral frames.  To do this,</font>
+   <font color=#229933>// subtract 1/2 of the hopsize to move to the average location</font>
+   <font color=#229933>// between the start of each frame, then add 1/2 of the block</font>
+   <font color=#229933>// size to center in the average middle time of the two frames.</font>
+
+   <font color=#229933>// There should also be an compensation for the window size</font>
+   <font color=#229933>// relationship to the hop size (large windows will smear the flux</font>
+   <font color=#229933>// so onsets will become earlier than for shorter windows).</font>
+
+   feature.hasTimestamp = true;
+   feature.timestamp = timestamp 
+      - Vamp::RealTime::fromSeconds(0.5 * getStepSize()/getSrate())
+      + Vamp::RealTime::fromSeconds(0.5 * getBlockSize()/getSrate());
+
+   feature.values.resize(0);
+   feature.values.push_back(fluxvalue);
+   returnFeatures[OUTPUT_RAW_FUNCTION].push_back(feature);
+
+   <font color=#229933>// also store the spectral flux function for later onset processing</font>
+   <font color=#229933>// in the getRemainingFeatures() function:</font>
+   mz_rawfunction.push_back(feature.values[0]);
+   mz_rawtimes.push_back(feature.timestamp);
+
+   return returnFeatures;
+}
+
+
+<a name=getRemainingFeatures>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::getRemainingFeatures</b> -- This function is called</font>
+<font color=#229933>//    after the last call to process() on the input data stream has </font>
+<font color=#229933>//    been completed.  Features which are non-causal can be calculated </font>
+<font color=#229933>//    at this point.  See the comment above the process() function</font>
+<font color=#229933>//    for the format of output Features.</font>
+<font color=#229933>//</font>
+
+MzSpectralFlux::FeatureSet MzSpectralFlux::getRemainingFeatures(void) {
+
+   Feature    feature;
+   FeatureSet returnFeatures;
+   int i;
+
+
+   //////////////////////////////////////////////////////////////////////<font color=#229933>//</font>
+   ///// store the plugin's FOURTH output: scaled SF function ///////////<font color=#229933>//</font>
+   //////////////////////////////////////////////////////////////////////<font color=#229933>//</font>
+
+   <font color=#229933>// for the SLOPE_PRODUCT, store the log-slope of the stored data in</font>
+   <font color=#229933>// mz_rawfunction:</font>
+   vector&lt;double&gt; tempprod;
+   tempprod.resize(mz_rawfunction.size());
+   tempprod[0] = 0.0;
+   if (mz_stype == SLOPE_PRODUCT) {
+      for (i=1; i&lt;(int)mz_rawfunction.size(); i++) {
+         tempprod[i] = log(mz_rawfunction[i] - mz_rawfunction[i-1]);
+      }
+      for (i=0; i&lt;(int)mz_rawfunction.size(); i++) {
+         mz_rawfunction[i] = tempprod[i];
+      }
+   }
+
+   <font color=#229933>// scale the raw spectral flux function so that its mean (average) is 0.0</font>
+   <font color=#229933>// and its standard deviation is 1.0.</font>
+
+   double mean = getMean(mz_rawfunction);
+   double sd   = getStandardDeviation(mz_rawfunction, mean);
+
+   vector&lt;double&gt; scaled_function;
+   scaled_function.resize(mz_rawfunction.size());
+
+   feature.hasTimestamp = true;
+   for (i=0; i&lt;(int)mz_rawfunction.size(); i++) {
+      scaled_function[i] = (mz_rawfunction[i] - mean) / sd;
+      feature.values.resize(0);
+      feature.values.push_back(scaled_function[i]);
+      feature.timestamp    = mz_rawtimes[i];
+      returnFeatures[OUTPUT_SCALED_FUNCTION].push_back(feature);
+   }
+
+   vector&lt;Vamp::RealTime&gt; onset_times;
+   vector&lt;double&gt; threshold_function;
+   vector&lt;double&gt; mean_function;
+   vector&lt;double&gt; onset_levels;
+
+   findOnsets(onset_times, onset_levels, mean_function, threshold_function, 
+              scaled_function, mz_rawtimes, mz_delta, mz_alpha);
+
+   //////////////////////////////////////////////////////////////////////<font color=#229933>//</font>
+   ///// store the plugin's FIFTH output: threshold function  ///////////<font color=#229933>//</font>
+   //////////////////////////////////////////////////////////////////////<font color=#229933>//</font>
+
+   feature.hasTimestamp = true;
+   for (i=0; i&lt;(int)threshold_function.size(); i++) {
+      feature.timestamp = mz_rawtimes[i];
+      feature.values.clear();
+      feature.values.push_back(threshold_function[i]);
+      returnFeatures[OUTPUT_THRESHOLD_FUNCTION].push_back(feature);
+   }
+
+   //////////////////////////////////////////////////////////////////////<font color=#229933>//</font>
+   ///// store the plugin's SIXTH output: mean function  ////////////////<font color=#229933>//</font>
+   //////////////////////////////////////////////////////////////////////<font color=#229933>//</font>
+
+   feature.hasTimestamp = true;
+   for (i=0; i&lt;(int)mean_function.size(); i++) {
+      feature.timestamp = mz_rawtimes[i];
+      feature.values.clear();
+      feature.values.push_back(mean_function[i]);
+      returnFeatures[OUTPUT_MEAN_FUNCTION].push_back(feature);
+   }
+
+   //////////////////////////////////////////////////////////////////////<font color=#229933>//</font>
+   ///// store the plugin's SEVENTH output: detected onsets /////////////<font color=#229933>//</font>
+   //////////////////////////////////////////////////////////////////////<font color=#229933>//</font>
+
+   char buffer[1024] = {0};
+   feature.values.clear();
+   feature.hasTimestamp = true;
+   for (i=0; i&lt;(int)onset_times.size(); i++) {
+      feature.timestamp = onset_times[i];
+      sprintf(buffer, "%6.2lf", ((int)(onset_levels[i] * 100.0 + 0.5))/100.0);
+      feature.label = buffer;
+      returnFeatures[OUTPUT_ONSETS].push_back(feature);
+   }
+
+   return returnFeatures;
+}
+
+
+<a name=reset>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::reset</b> -- This function may be called after data </font>
+<font color=#229933>//    processing has been started with the process() function.  It will </font>
+<font color=#229933>//    be called when processing has been interrupted for some reason and </font>
+<font color=#229933>//    the processing sequence needs to be restarted (and current analysis </font>
+<font color=#229933>//    output thrown out).  After this function is called, process() will </font>
+<font color=#229933>//    start at the beginning of the input selection as if initialise() </font>
+<font color=#229933>//    had just been called.  Note, however, that initialise() will NOT </font>
+<font color=#229933>//    be called before processing is restarted after a reset().</font>
+<font color=#229933>//</font>
+
+void MzSpectralFlux::reset(void) {
+   lastframe.resize(0);
+   mz_rawfunction.resize(0);
+   mz_rawtimes.resize(0);
+}
+
+
+<font color=#229933>///////////////////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// Non-Interface Functions </font>
+<font color=#229933>//</font>
+<a name=generateMidiNoteList>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::generateMidiNoteList</b> -- Create a list of pitch names </font>
+<font color=#229933>//   for the specified MIDI key number range.</font>
+<font color=#229933>//</font>
+
+void MzSpectralFlux::generateMidiNoteList(vector&lt;std::string&gt;& alist,
+	int minval, int maxval) {
+
+   alist.clear();
+   if (maxval &lt; minval) {
+      std::swap(maxval, minval);
+   }
+
+   int i;
+   int octave;
+   int pc;
+   char buffer[32] = {0};
+   for (i=minval; i&lt;=maxval; i++) {
+      octave = i / 12;
+      pc = i - octave * 12;
+      octave = octave - 1;  <font color=#229933>// Make middle C (60) = C4</font>
+      switch (pc) {
+         case 0:   sprintf(buffer, "C%d",  octave); break;
+         case 1:   sprintf(buffer, "C#%d", octave); break;
+         case 2:   sprintf(buffer, "D%d",  octave); break;
+         case 3:   sprintf(buffer, "D#%d", octave); break;
+         case 4:   sprintf(buffer, "E%d",  octave); break;
+         case 5:   sprintf(buffer, "F%d",  octave); break;
+         case 6:   sprintf(buffer, "F#%d", octave); break;
+         case 7:   sprintf(buffer, "G%d",  octave); break;
+         case 8:   sprintf(buffer, "G#%d", octave); break;
+         case 9:   sprintf(buffer, "A%d",  octave); break;
+         case 10:  sprintf(buffer, "A#%d", octave); break;
+         case 11:  sprintf(buffer, "B%d",  octave); break;
+         default:  sprintf(buffer, "x%d", i);
+      }
+      alist.push_back(buffer);
+   }
+}
+
+
+<a name=makeFreqMap>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::makeFreqMap</b> -- Calculates the bin mapping from</font>
+<font color=#229933>//      a DFT spectrum into a MIDI-like spectum.  When DFT bins are</font>
+<font color=#229933>//      wider than a half-step (MIDI note number), the DFT bin is</font>
+<font color=#229933>//      used as a single MIDI bin.  When the DFT bin is smaller than</font>
+<font color=#229933>//      a half-step, they are grouped together into a single MIDI bin.</font>
+<font color=#229933>//</font>
+<font color=#229933>// As an example, here is the mapping when the DFT transform size is 2048,</font>
+<font color=#229933>// and the samping rate is 44100 Hz:</font>
+<font color=#229933>//</font>
+<font color=#229933>// MIDI bins 0 to 34 map one-to-one with the DFT bins 0 to 34, then each</font>
+<font color=#229933>// of the subsequent MIDI bins contains the following number of DFT bins:</font>
+<font color=#229933>// </font>
+<font color=#229933>// 34:2 35:2 36:2 37:3 38:2 39:3 40:3 41:2 42:4 43:3 44:4 45:3 46:4 47:4</font>
+<font color=#229933>// 48:5 49:5 50:5 51:5 52:6 53:5 54:7 55:6 56:8 57:7 58:8 59:8 60:9 61:10</font>
+<font color=#229933>// 62:10 63:10 64:12 65:11 66:13 67:13 68:15 69:15 70:15 71:17 72:18 73:19</font>
+<font color=#229933>// 74:20 75:21 76:23 77:23 78:26 79:26 80:29 81:30 82:31 83:459</font>
+<font color=#229933>// </font>
+<font color=#229933>// MIDI bin 83 represents MIDI note number 127, and it contains the last 459</font>
+<font color=#229933>// positive frequency bins of the DFT.  MIDI bin 34 is probably representing </font>
+<font color=#229933>// MIDI note number 78 (F-sharp 5).</font>
+<font color=#229933>// </font>
+<font color=#229933>// Implementation Reference:  </font>
+<font color=#229933>//     <a href=http://www.ofai.at/~simon.dixon/beatbox>http://www.ofai.at/~simon.dixon/beatbox</a> </font>
+<font color=#229933>//</font>
+
+void MzSpectralFlux::makeFreqMap(vector&lt;int&gt;& mapping,
+      int fftsize, float srate) {
+
+   if (fftsize &lt;= 0) {
+      <font color=#229933>// getOutputDescriptors() will call this function</font>
+      <font color=#229933>// before the fftsize is set, so avoid an unintialized</font>
+      <font color=#229933>// fftsize.</font>
+      mapping.resize(0);
+      return;
+   }
+   double width  = srate / fftsize;
+   double a4freq = 440.0;
+   int    a4midi = 69;
+   int    mapsize= fftsize/2+1;
+   int    xbin   = (int)(2.0/(pow(2.0, 1.0/12.0) - 1.0));
+   int    xmidi  = (int)(log(xbin*width/a4freq)/log(2.0)*12 + a4midi + 0.5);
+   int    midi;
+   int    i;
+ 
+   mapping.resize(mapsize);
+
+   for (i=0; i&lt;=xbin; i++) {  <font color=#229933>// store the one-to-one mappings</font>
+      mapping[i] = i;
+   }
+   for (i=xbin+1; i&lt;mapsize; i++) {
+      midi = (int)(log(i*width/a4freq)/log(2.0)*12 + a4midi + 0.5);
+      if (midi &gt;  127) {
+         midi = 127;
+      }
+      mapping[i] = xbin + midi - xmidi;
+   }
+}
+
+
+<a name=createWorkingSpectrum>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::createWorkingSpectrum</b> -- Creates a magnitude</font>
+<font color=#229933>//     spectrum from the input complex DFT spectrum according to</font>
+<font color=#229933>//     the user specified spectrum type.</font>
+<font color=#229933>//</font>
+
+void MzSpectralFlux::createWorkingSpectrum(vector&lt;double&gt;& magspectrum,
+      MazurkaTransformer& transformer, double srate, int spectrum_type, 
+      double smooth) {
+
+   vector&lt;double&gt; tempspec;
+   int tsize = (int)transformer.getSize() / 2 + 1;
+   tempspec.resize(tsize);
+   int i;
+   for (i=0; i&lt;tsize; i++) {
+      tempspec[i] = transformer.getSpectrumMagnitude(i);
+   }
+
+   <font color=#229933>// smooth the spectrum if requested by the user:</font>
+   if (smooth &lt; 1.0) {
+      smoothSpectrum(tempspec, smooth);
+   }
+
+   int ssize;
+   switch (spectrum_type) {
+      case SPECTRUM_DFT:
+         ssize = transformer.getSize() / 2 + 1;
+         magspectrum.resize(ssize);
+         for (i=0; i&lt;ssize; i++) {
+            magspectrum[i] = tempspec[i];
+         }
+	 break;
+      case SPECTRUM_LOWDFT:
+         ssize = (transformer.getSize() / 2 + 1) / 2;
+         magspectrum.resize(ssize);
+         for (i=0; i&lt;ssize; i++) {
+            magspectrum[i] = tempspec[i];
+         }
+	 break;
+      case SPECTRUM_HIDFT: <font color=#229933>// check for off-by-one errs here if plugin crashes</font>
+         ssize = (transformer.getSize() / 2 + 1) / 2;
+         magspectrum.resize(ssize);
+         for (i=0; i&lt;ssize; i++) {
+            magspectrum[i] = tempspec[i+ssize];
+         }
+	 break;
+      case SPECTRUM_MIDI:
+      default:
+         createMidiSpectrum(magspectrum, tempspec, srate);
+   }
+
+}
+
+
+<a name=createMidiSpectrum>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::createMidiSpectrum</b> -- Maps the non-negative</font>
+<font color=#229933>//     DFT spectrum into a MIDI-like spectrum.  DFT bins which are</font>
+<font color=#229933>//     less than one half-step in size (1 MIDI note) are preserved.</font>
+<font color=#229933>//     DFT bins smaller than a half-step are grouped together into</font>
+<font color=#229933>//     one MidiSpectrum bin.  </font>
+<font color=#229933>//</font>
+
+void MzSpectralFlux::createMidiSpectrum(vector&lt;double&gt;& midispectrum, 
+      vector&lt;double&gt;& magspec, double srate) {
+
+   static vector&lt;int&gt; mapping;
+
+   <font color=#229933>// build the bin mapping table betwen the positive DFT bins</font>
+   <font color=#229933>// and the MIDI spectrum bins if the size of the map does</font>
+   <font color=#229933>// not match the input spectrum non-zero bin count:</font>
+   <font color=#229933>//</font>
+   if ((int)mapping.size() != (int)magspec.size()) {
+      makeFreqMap(mapping, (magspec.size() - 1) * 2, srate);
+   }
+
+   <font color=#229933>// calculate the size of the output MIDI spectrum:</font>
+   int midispectrumsize = mapping[mapping.size()-1] + 1;
+   midispectrum.resize(midispectrumsize);
+
+   <font color=#229933>// choose the bin grouping method and calculate output spectrum:</font>
+   int i;
+
+   for (i=0; i&lt;(int)midispectrum.size(); i++) {
+      midispectrum[i] = 0.0;
+   }
+   for (i=0; i&lt;(int)mapping.size(); i++) {
+      midispectrum[mapping[i]] += magspec[i];
+   }
+}
+
+
+<a name=calculateMidiSpectrumSize>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::calculateMidiSpectrumSize</b> -- Used in getOutputDescriptors().</font>
+<font color=#229933>//</font>
+
+int MzSpectralFlux::calculateMidiSpectrumSize(int transformsize, double srate) {
+   if (transformsize &lt;= 1) {
+      <font color=#229933>// getOutputDescriptors() will call this function before</font>
+      <font color=#229933>// the transform size is initialized, so give some dummy</font>
+      <font color=#229933>// data when that happens.</font>
+      return 1000;
+   } else {
+      vector&lt;int&gt; mapping;
+      makeFreqMap(mapping, transformsize, srate);
+      return mapping[mapping.size()-1] + 1;
+   }
+}
+
+
+<a name=getStandardDeviation>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::getStandardDeviation</b> -- calculates the standard deviation </font>
+<font color=#229933>//     of a set of numbers.</font>
+<font color=#229933>//</font>
+
+double MzSpectralFlux::getStandardDeviation(vector&lt;double&gt;& sequence, 
+      double mean) {
+   if ((int)sequence.size() == 0) {
+      return 1.0;
+   }
+   double sum = 0.0;
+   double value;
+   int i;
+   for (i=0; i&lt;(int)sequence.size(); i++) {
+      value = sequence[i] - mean;
+      sum += value * value;
+   }
+
+   return sqrt(sum / sequence.size());
+}
+
+
+<a name=getMean>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::getMean</b> -- calculates the average of the input values.</font>
+<font color=#229933>//</font>
+
+double MzSpectralFlux::getMean(vector&lt;double&gt;& sequence, int mmin, int mmax) {
+   if ((int)sequence.size() == 0) {
+      return 0.0;
+   }
+   if (mmin &lt; 0) {
+      mmin = 0;
+   }
+   if (mmax &lt; 0) {
+      mmax = (int)sequence.size()-1;
+   }
+
+   double sum = 0.0;
+   for (int i=mmin; i&lt;=mmax; i++) {
+      sum += sequence[i];
+   }
+   return sum / (mmax - mmin + 1);
+}
+
+
+<a name=findOnsets>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::findOnsets</b> -- identify onset peaks in the scaled</font>
+<font color=#229933>//   spectral flux function according to the three criteria found</font>
+<font color=#229933>//   in section 2.6 of (Dixon 2006):</font>
+<font color=#229933>//     (1) f[n] &gt;= local maximum </font>
+<font color=#229933>//     (2) f[n] &gt;= local mean + delta</font>
+<font color=#229933>//     (3) f[n] &gt;= g[n], where g[n] = max(f[n], a g[n-1] + (1-a) f[n])</font>
+<font color=#229933>//                 "g[n]" == threshold function.</font>
+<font color=#229933>//</font>
+
+void MzSpectralFlux::findOnsets(vector&lt;Vamp::RealTime&gt;& onset_times, 
+   vector&lt;double&gt;& onset_levels, vector&lt;double&gt;& mean_function, 
+   vector&lt;double&gt;& threshold_function, vector&lt;double&gt;& scaled_function, 
+   vector&lt;Vamp::RealTime&gt;& functiontimes, double delta, double alpha) {
+
+   int    i;
+   int    length      = (int)scaled_function.size();
+   int    width       = 3;
+   int    backwidth   = 3 * width;
+   double localmeanthreshold;
+
+   vector&lt;double&gt;& tf = threshold_function;
+   vector&lt;double&gt;& sf = scaled_function;
+   double&          a = alpha;
+   
+   onset_times.clear();
+   onset_levels.clear();
+   mean_function.resize(length);
+   threshold_function.resize(length);
+   threshold_function[0] = scaled_function[0];
+
+   for (i=1; i&lt;length; i++) {
+      threshold_function[i] = std::max(sf[i], a*tf[i-1] + (1-a)*sf[i]);
+   }
+
+   for (i=0; i&lt;length; i++) {
+
+      <font color=#229933>// Additive method which is scaling sensitive (i.e., misses quiet</font>
+      <font color=#229933>// attacks). delta = 0.35 is the recommended value for this test.</font>
+      localmeanthreshold = getMean(sf,i-backwidth,i+width)+delta;
+
+      <font color=#229933>// Muliplicative method using delta about 10%...  This test is</font>
+      <font color=#229933>// overly sensitive in quiet regions of the audio, so a combination</font>
+      <font color=#229933>// of the Additive and Multiplicative methods might be best.</font>
+      <font color=#229933>// localmeanthreshold = getMean(sf,i-backwidth,i+width)*(1.0+delta/100.0);</font>
+
+      mean_function[i] = localmeanthreshold;
+
+      if (sf[i] &lt; localmeanthreshold) {
+         continue;
+      }
+   <font color=#992233>/* Additive method which is scaling sensitive (i.e., misses quiet attacks)     * (delta = 0.35 is a recommended value for this test).
+    * if (sf[i] &lt; getMean(sf, i-backwidth, i+width) + delta)) {
+    *    continue;
+    * }
+    */</font>
+      if (sf[i] &lt; tf[i]) {
+         continue;
+      }
+      if (!localmaximum(sf, i, i-width, i+width)) {
+         continue;
+      }
+
+      <font color=#229933>// an onset detection has been triggered so sore the time of it:</font>
+      onset_times.push_back(functiontimes[i]);
+      onset_levels.push_back(sf[i]);
+   }
+
+}
+
+
+<a name=localmaximum>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::localmaximum</b> -- returns true if the specified value</font>
+<font color=#229933>//     is the largest (or ties for the largest) in the given region.</font>
+<font color=#229933>//</font>
+
+int MzSpectralFlux::localmaximum(vector&lt;double&gt;& data, int target, int minimum,
+   int maximum) {
+
+   if (minimum &lt; 0) {
+      minimum = 0;
+   }
+   if (maximum &gt;= (int)data.size()) {
+      maximum = (int)data.size() - 1;
+   }
+
+   double maxval = data[minimum];
+   for (int i=minimum+1; i&lt;=maximum; i++) {
+      maxval = std::max(maxval, data[i]);
+   }
+
+   return (maxval &lt;= data[target]);
+}
+
+
+<a name=calculateSpectrumSize>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::calculateSpectrumSize</b> -- count how many bins</font>
+<font color=#229933>//    are present in the underlying spectrum data frames.  This depends</font>
+<font color=#229933>//    on what type of spectrum is being used.</font>
+<font color=#229933>//</font>
+
+int MzSpectralFlux::calculateSpectrumSize(int spectrumType, int 
+      blocksize, double srate) {
+
+   <font color=#229933>// give dummy data if uninitialized variables are passed into the function:</font>
+   if (blocksize &lt;= 1) {
+      return 1000;
+   }
+   if (srate &lt;= 1.0) {
+      return 1000;
+   }
+
+   switch (spectrumType) {
+      case SPECTRUM_MIDI:
+         return calculateMidiSpectrumSize(blocksize, srate);
+      break;
+
+      case SPECTRUM_LOWDFT:
+         return (blocksize / 2 + 1) / 2;
+      break;
+
+      case SPECTRUM_HIDFT:
+         return (blocksize / 2 + 1) / 2;
+      break;
+
+      case SPECTRUM_DFT:
+      default:
+         return blocksize / 2 + 1;
+   }
+
+      
+}
+
+
+<a name=getSpectralFlux>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::getSpectralFlux</b> -- do the actual calcualtion of the</font>
+<font color=#229933>//    flux value from the spectral difference vector.</font>
+<font color=#229933>//</font>
+<font color=#229933>// The Norm calculation is (in latex format):</font>
+<font color=#229933>//    \left| x \right|_p \equiv \left( \sum_i \left|x_i\right|^p \right)^{1/p}</font>
+<font color=#229933>//</font>
+
+double MzSpectralFlux::getSpectralFlux(vector&lt;double&gt;& spectral_derivative, 
+      int fluxtype, double pnormorder) {
+   
+   int framesize = (int)spectral_derivative.size();
+   int i;
+   double safepnormorder = pnormorder == 0.0 ? 1.0 : pnormorder;
+
+   switch (fluxtype) {
+   case SLOPE_COMPOSITE:
+      {
+      double positive = 0.0;
+      double negative = 0.0;
+      double total    = 0.0;
+      double value;
+      for (i=0; i&lt;framesize; i++) {
+         if (spectral_derivative[i] == 0.0) {
+            continue;  <font color=#229933>// no need to waste time caculating a power of zero</font>
+         }
+         value = pow(fabs(spectral_derivative[i]), pnormorder);
+         total += value;
+         if (spectral_derivative[i] &gt; 0) {
+            positive += value;
+         } else {
+            negative += value;
+         }
+      }
+      positive = pow(positive, 1.0/safepnormorder);
+      negative = pow(negative, 1.0/safepnormorder);
+      total    = pow(total,    1.0/safepnormorder);
+
+      double denominator = fabs(total - positive);
+      if (denominator &lt; 0.001) {
+         denominator = 0.01;
+      }
+      value = (positive - negative)/denominator;
+      if (value &lt; 0.0) {
+         value = 0.0;
+      }
+      return value;
+      }
+   break;
+
+   case SLOPE_DIFFERENCE:
+      {
+      double positive = 0.0;
+      double negative = 0.0;
+      double value;
+      for (i=0; i&lt;framesize; i++) {
+         if (spectral_derivative[i] == 0.0) {
+            continue;  <font color=#229933>// no need to waste time caculating a power of zero</font>
+         }
+         value = pow(fabs(spectral_derivative[i]), pnormorder);
+         if (spectral_derivative[i] &gt; 0) {
+            positive += value;
+         } else {
+            negative += value;
+         }
+      }
+      positive = pow(positive, 1.0/safepnormorder);
+      negative = pow(negative, 1.0/safepnormorder);
+      value = positive - negative;
+      if (value &lt; 0.0) {   <font color=#229933>// supress peak detection in negative regions</font>
+         value = 0.0;
+      }
+
+      return value;
+      }
+   break;
+
+   case SLOPE_ANGULAR:
+      {
+      double sum = 0.0;
+      for (i=0; i&lt;framesize; i++) {
+         sum += spectral_derivative[i];
+      }
+      return acos(sum);
+      }
+   break;
+
+   case SLOPE_COSINE:
+      {
+      double sum = 0.0;
+      for (i=0; i&lt;framesize; i++) {
+         sum += spectral_derivative[i];
+      }
+      return -sum;
+      }
+   break;
+
+   default:
+      {
+      double sum = 0.0;
+      for (i=0; i&lt;framesize; i++) {
+         if (spectral_derivative[i] == 0.0) {
+            continue;  <font color=#229933>// no need to waste time caculating a power of zero</font>
+         }
+         sum += pow(fabs(spectral_derivative[i]), pnormorder);
+      }
+      return pow(sum, 1.0/safepnormorder);
+      }
+   }
+
+   return 0.0;   <font color=#229933>// shouldn't get to this line</font>
+
+}
+
+
+<a name=smoothSpectrum>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzSpectralFlux::smoothSpectrum</b> -- smooth the sequence with a</font>
+<font color=#229933>//    symmetric exponential smoothing filter (applied in the forward</font>
+<font color=#229933>//    and reverse directions with the specified input gain.</font>
+<font color=#229933>//</font>
+<font color=#229933>//    Difference equation for smoothing: y[n] = k * x[n] + (1-k) * y[n-1]</font>
+<font color=#229933>//</font>
+
+void MzSpectralFlux::smoothSpectrum(vector&lt;double&gt;& sequence, double gain) {
+   double oneminusgain = 1.0 - gain;
+   int i;
+   int ssize = sequence.size();
+
+   <font color=#229933>// reverse filtering first </font>
+   for (i=ssize-2; i&gt;=0; i--) {
+      sequence[i] = gain*sequence[i] + oneminusgain*sequence[i+1];
+   }
+
+   <font color=#229933>// then forward filtering</font>
+   for (i=1; i&lt;ssize; i++) {
+      sequence[i] = gain*sequence[i] + oneminusgain*sequence[i-1];
+   }
+
+}
+</pre>
+
+
+</td></tr>
+</table>
+</center>
+
+
+
+
+</body>
+</html>
+   

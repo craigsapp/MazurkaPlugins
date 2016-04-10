@@ -1,0 +1,101 @@
+@BEGIN:	SVPLUGIN
+
+@NAME: MzHarmonicSpectrum
+@APROPOS: Displays the Harmonic Product Spectrum from which pitch
+	estimates of monophonic harmonic input audio can be made.
+
+@BEGIN:	PARAMETERS
+
+@PARAMETER01:
+
+
+@END:	PARAMETERS
+
+@BEGIN:	OUTPUTS
+@OUTPUTS:
+@OUTPUT01: Harmonic spectrum:
+	The full harmonic product spectrum.
+@OUTPUT02: Spectral power:
+	The average power of each spectral frame.
+@OUTPUT03: Raw pitch:
+	Basic estimate of the pitch extracted from the spectrum.
+
+@END:	OUTPUTS
+
+@INPUTS: Currently will only measure the power of the first audio channel.
+	If a stereo files is input, the right channel will be ignored.
+
+@DESCRIPTION:  
+
+The harmonic product spectrum (or harmonic spectrum for short) is the 
+geometric mean of amplitudes of the harmonics associated with a particular 
+frequency in the spectrum:
+
+<p>
+<center>
+<div class=latexeqn name=hps size=+1>
+\mbox{HPS}(k) = \left(\prod_{n=1}^{N} Y(n\ k) \right)^{\frac{1}{N}}
+</div>
+</center>
+<p>
+where HPS is the harmonic product spectrum, <i>k</i> is the <i>k</i>-th
+indexed frequency bin in the harmonic spectrum, <i>Y</i> is the magnitude
+spectrum of the positive frequencies, and <i>N</i> is the number of
+harmonics to consider.
+
+<p> The following schematic demonstrates how the harmonic spectrum
+is calculates.  The original spectrum is squeezed so that each successive
+harmonic of the original signal is aligned with the fundamental
+harmonic.  To do this, the spectrum is squeezed by 1/2 to align the
+first overtone with the fundamental (it doesn't matter what
+frequency the fundamental is at because the first overtone is always
+twice the frequency of the fundamental).  Then the spectrum is 
+squeezed to 1/3 to align the second overtone with the fundamental, and
+so on (typically for about 5 harmonics).
+
+<p>
+<center>
+<img src=img/hpsdiagram.png border=0>
+</center>
+
+<p> Here is a comparison of the plain magnitude spectrum
+and the harmonic product spectrum:
+
+<p>
+<center>
+<img border=0 src=img/hpscompare.png>
+</center>
+
+<p> The nice property of the harmonic spectrum is that it gives
+a simple estimate of the pitch in the audio signal.
+
+
+@SEEALSO: 
+
+@LIMITATIONS:  
+
+@BUGS: Currently under development. Pitch estimate needs elaboration, 
+       just finding the max at the moment but need to correct for
+       sub-harmonics which are really the fundamental.
+
+@BEGIN:	REFERENCES
+@REFERENCE:
+	de la Cuadra, Patricio, Aaron Master and Craig Sapp, 
+	"<a href=http://ccrma.stanford.edu/~craig/papers/01/icmc01-pitch.pdf>Efficient Pitch 
+	Detection Techniques for Interactive Music</a>" in the Proceedings 
+	of the International Computer Music Conference (ICMC) 2001, 
+	Havana, Cuba.  pp. 403-406.
+
+@REFERENCE:
+     Noll, Michael.  "<i>Pitch determination of human speech by the
+   harmonic product spectrum, the harmonic sum spectrum, and a 
+   maximum likelihood estimate</i>", Proceedings of the Symposium 
+   on Computer Processing in Communications, April 8-10, 1969.
+
+
+
+
+
+@END:	REFERENCES
+
+@END:	SVPLUGIN

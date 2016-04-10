@@ -1,0 +1,135 @@
+<!---------------------------------------------------------------------------->
+<html>
+<head>
+<title> Sig++ example program: MzSpectralFlatness.h </title>
+<meta name="Document-Owner" content="Craig Sapp (craig@ccrma.stanford.edu)"> 
+<meta name="Author" content="Craig Stuart Sapp (craig@ccrma.stanford.edu)">
+<meta name="Creation-Date" content=" Tue May  9 19:38:11 PDT 2000 ">
+<meta name="Revision-Date" content=" Tue Jan 16 09:38:43 PST 2007
+ ">
+</head>
+
+<body bgcolor=#ffffff alink=#333399 link=#333399 vlink=#333399 text=#220000>
+<!-- header *************************************************** -->
+
+<center>
+<table width=760 cellpadding=0 cellspacing=0 border=0>
+<tr valign=top>
+<td>
+   <a href=http://www.charm.rhul.ac.uk><img alt="" border=0 src=../../images/logo.gif></a>
+</td>
+<td>
+   <a href=http://mazurka.org.uk><img alt="" border=0 src=../../images/banner.gif></a>
+</td>
+</tr>
+</table>
+</center>
+
+<center>
+<table><tr><td>
+
+
+<pre>
+<font color=#229933>//</font>
+<font color=#229933>// Programmer:    Craig Stuart Sapp &lt;craig@ccrma.stanford.edu&gt;</font>
+<font color=#229933>// Creation Date: Sat Jan 13 05:27:58 PST 2007 (copied over from MzNevermore)</font>
+<font color=#229933>// Last Modified: Sat Jan 13 05:28:13 PST 2007</font>
+<font color=#229933>// Filename:      MzSpectralFlatness.h</font>
+<font color=#229933>// URL:           <a href=http://sv.mazurka.org.uk/include/MzSpectralFlatness.h>http://sv.mazurka.org.uk/include/MzSpectralFlatness.h</a></font>
+<font color=#229933>// Documentation: <a href=http://sv.mazurka.org.uk/MzSpectralFlatness>http://sv.mazurka.org.uk/MzSpectralFlatness</a></font>
+<font color=#229933>// Syntax:        ANSI99 C++; vamp 0.9 plugin</font>
+<font color=#229933>//</font>
+<font color=#229933>// Description:   Spectral flatness measurement plugin for vamp.</font>
+<font color=#229933>// </font>
+
+<font color=#cccccc>#ifndef _MZSPECTRALFLATNESS_H_INCLUDED</font>
+<font color=#cccccc>#define _MZSPECTRALFLATNESS_H_INCLUDED</font>
+
+#include "MazurkaPlugin.h"  <font color=#229933>// Mazurka plugin interface for Sonic Visualiser</font>
+#include "MazurkaTransformer.h"
+#include "MazurkaWindower.h"
+
+
+class MzSpectralFlatness : public MazurkaPlugin {
+
+   public: 
+
+   <font color=#229933>// plugin interface functions:</font>
+
+                    MzSpectralFlatness      (float samplerate);
+      virtual      ~MzSpectralFlatness      ();
+
+      <font color=#229933>// required polymorphic functions inherited from PluginBase:</font>
+      std::string   getName                 (void) const;
+      std::string   getMaker                (void) const;
+      std::string   getCopyright            (void) const;
+      std::string   getDescription          (void) const;
+      int           getPluginVersion        (void) const;
+
+      <font color=#229933>// optional parameter interface functions</font>
+      ParameterList getParameterDescriptors (void) const;
+
+      <font color=#229933>// required polymorphic functions inherited from Plugin:</font>
+      InputDomain   getInputDomain          (void) const;
+      OutputList    getOutputDescriptors    (void) const;
+      bool          initialise              (size_t channels, 
+                                             size_t stepsize, 
+                                             size_t blocksize);
+      FeatureSet    process                 (AUDIODATA inputbufs, 
+                                             Vamp::RealTime timestamp);
+      FeatureSet    getRemainingFeatures    (void);
+      void          reset                   (void);
+
+      <font color=#229933>// optional polymorphic functions from Plugin:</font>
+      size_t        getPreferredStepSize    (void) const;
+      size_t        getPreferredBlockSize   (void) const;
+      size_t        getMinChannelCount      (void) const { return 1; }
+      size_t        getMaxChannelCount      (void) const { return 1; }
+
+   <font color=#229933>// non-interface functions and variables:</font>
+      static double getArithmeticMean       (std::vector&lt;double&gt;& sequence);
+      static double getGeometricMean        (std::vector&lt;double&gt;& sequence);
+      static double getSpectralFlatness     (std::vector&lt;double&gt;& sequence);
+      static void   smoothSequence          (std::vector&lt;double&gt;& sequence, 
+                                             double gain);
+
+   private: 
+
+      int    mz_transformsize; <font color=#229933>// DFT transform size</font>
+      int    mz_minbin;        <font color=#229933>// minimum bin to display</font>
+      int    mz_maxbin;        <font color=#229933>// maximum bin to display</font>
+      int    mz_compress;      <font color=#229933>// for compressing the magnigude range</font>
+      double mz_smooth;        <font color=#229933>// smoothing gain</font>
+       
+      MazurkaTransformer mz_transformer;  <font color=#229933>// interface FFTW Fourier transforms</font>
+      MazurkaWindower    mz_windower;     <font color=#229933>// interface for windowsing signals</font>
+
+      std::vector&lt;double&gt; flatness_curve;  <font color=#229933>// store data for smoothing</font>
+      std::vector&lt;Vamp::RealTime&gt; flatness_times;  <font color=#229933>// store data for smoothing</font>
+
+      <font color=#229933>// input parameters:</font>
+      <font color=#229933>// </font>
+      <font color=#229933>//    "windowsamples"    -- number of samples in audio window</font>
+      <font color=#229933>//    "transformsamples" -- number of samples in transform</font>
+      <font color=#229933>//    "stepsamples"      -- number of samples between analysis windows</font>
+      <font color=#229933>//    "minbin"           -- lowest transform bin to display</font>
+      <font color=#229933>//    "maxbin"           -- highest transform bin to display</font>
+
+};
+
+
+<font color=#cccccc>#endif <font color=#229933>// _MZSPECTRALFLATNESS_H_INCLUDED</font></font>
+
+</pre>
+
+
+</td></tr>
+</table>
+</center>
+
+
+
+
+</body>
+</html>
+   

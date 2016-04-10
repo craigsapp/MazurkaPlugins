@@ -1,0 +1,20 @@
+
+
+BASE   := $(shell basename `pwd`)
+BINDIR = ../bin2
+
+all: index htmlcode
+
+
+index:
+	$(BIN)/makepluginindex ../template.html ./
+
+
+htmlcode:
+	
+	$(BIN)/codecommentary src/$(BASE).cpp > src/$(BASE).cpp.html
+	$(BIN)/codecommentary src/$(BASE).h > src/$(BASE).h.html
+
+
+
+

@@ -1,0 +1,199 @@
+@BEGIN:	SVPLUGIN
+
+@NAME: MzChronogram
+@APROPOS: Time-domain analogy to spectrograms.
+
+@SUMMARY: The MzChronogram plugin displays a time-domain signal in 
+two dimensions as if
+it were a set of frequency frames in a spectrogram.  The time sequence
+runs from top to bottom, from left to right.  Stable periodic
+sounds generate displays of parallel lines with the line slope dependent 
+on the frequencies of the sinewaves.
+
+
+@BEGIN:	PARAMETERS
+
+@PARAMETER01: Vertical period: 
+		The pixel height of each channel in terms of 
+		the number of audio samples to display in each data column.
+
+@PARAMETER02: Frequency: 
+		The height of each channel display in terms of a frequency
+		(inverse of period).  If this value is changed from its default
+		setting, then the plugin will use this value instead of the 
+		<i>vertical period</i> parameter.
+
+@PARAMETER03: Chroma: 
+		The pitch-class for a frequency height specification.
+  		If the chroma is set to a value other than "none",
+		then the vertical period will be calculated from the
+		fundamental frequency of the specified pitch-class
+		at the given octave (overriding both the 
+		<i>vertical period</i>
+		and <i>frequency</i> parameters).
+
+@PARAMETER04: Octave:
+		Used in conjunction with the 
+		<i>chroma</i> parameter.
+		Octave 4 is the octave of middle C (C4).
+		Frequencies are calculated from the chroma/octave
+		values using equal-temperament with A4=440 Hz.
+
+@PARAMETER05: Channel view:
+		By default, all audio channels will be displayed in the
+		chronogram.  You can also use this parameter to display
+		only the left channel, right channel or the stereo difference.
+		
+
+@PARAMETER06: Sensitivity:
+		A parameter which controls the contrast between low
+		amplitude and high amplitude parts of the audio data.
+		
+
+
+@END:	PARAMETERS
+
+
+@DESCRIPTION:  
+
+<p>
+
+The following diagram demonstrates how the sound samples are
+filled into a two-dimensional grid in the chronographic display.   The audio
+is split up into frames equal to the number of rows in the chronogram.
+Then the frame column is filled with audio sample data 
+from the top to the bottom of the column.  In Sonic Visualiser, the
+chronogram columns line-up exactly with the corresponding display
+of the audio waveform.
+
+<p>
+<center>
+<img src=img/chronogramsequence-small.png border=0>
+</center>
+
+<p> When a sound contains a period which is an exact multiple of the
+vertical period of the chronographic display, that sound will be displayed
+as horizontal lines on the display as shown in the figure below.  In this
+example, there is a sinewave oscillator which plays 43 Hz for one second,
+then sweeps up to 5 * 43 = 215 Hz and stays there for one second, then
+sweeps up to 10 * 43 = 430 Hz and stay there for one second.  In each
+case where the frequency is a multiple of the sampling rate divided
+by the vertical period of the chronographic display, horizontal lines will
+be displayed.  The number of horizontal lines indicates the frequency
+of the pitch.  For example, the middle of the picture where there are
+5 red bands indicates a frequency of 5 * 44100/1024 = 215 Hz.
+
+<p> <center> <img src=img/sweep43-430.jpg border=0> <br><a class=link
+href=sound/sweep43-430.mp4>Click here</a> to listen to the corresponding
+sound.  </center>
+
+<p>
+Stable frequencies which are not multiples of the vertical period of the
+chronogram will form parallel lines at various angles.  Lines which slope
+upwards are slightly sharper than the horizontal frequency represented
+by the number of vertical lines.  And likewise, falling slopes indicate
+a flatter frequency.  The following example starts at 10 times the frame
+frequency of 43 Hz, and then increases the pitch by 43/8 Hz until the
+oscillator arrives at 11 times the frame frequency (count the number of
+red lines at the right side of the picture).
+
+
+<p>
+<center>
+<a href=img/eightfreq-large.jpg><img src=img/eightfreq-small.gif border=0></a>
+<br><a class=link href=sound/eightfreq.mp4>Click here</a> to listen to the 
+corresponding sound.
+</center>
+
+<p> For complex harmonic tones which contain more than one sinewave, the 
+pitch of the tone at its fundamental frequency is visible as a slope
+of parallel lines.  Each of the harmonics of the tone are on a similar
+slope.  For example the first overtone occurs twice as often as the
+fundamental frequency, so their periods match at 2:1.  Likewise, the
+second overtone at an octave and a fifth above the fundamental
+frequency has a ratio of 3:1 with the fundamental.  
+
+<p> Notes which are considered consonant have similar slopes in the
+lines for their pitches, while notes of dissonant intervals
+will have dissimilar slopes.  Notice in the following example that
+the notes "f", "a", and "c" which form a major triad all have the
+same primary slope.  
+
+
+<p>
+<center>
+<a href=sound/chromo.mp4><img src=img/chromo.gif border=0></a>
+<br><a class=link href=sound/chromo.mp4>Click here</a> to listen to the 
+corresponding sound.
+</center>
+
+<p>
+Below is an example from a real performance.  The original
+recording is in stereo, and the chronographic display will display
+each channel of the signal on top of each other, with the left
+channel above the right, as is done with the waveform display
+in Sonic Visualiser.  In this example, you can see loud notes as
+regions of high contrast in the chronographic display since the waveform
+is oscillation between the extreme ranges of the display. Also,
+the chronographic display is useful to view changes of pitch where
+the amplitude of the waveform does not change significantly.  For example,
+there is a low note played softly near the middle of the following
+diagram.  The low note is visible in the chronogram as a region
+of parallel lines which are fairly widely spaced.
+
+<p>
+<center>
+<img src=img/realchronogram.png border=0>
+</center>
+
+<pre>
+
+</pre>
+
+<p>
+<b>Sensitivity parameter</b>
+
+
+<p> The <i>sensitivity</i> parameter control for MzChronogram
+is used to enhance visibility in quiet regions of audio.
+Normally when display a region which has low amplitude, the
+color of the display will have a low contrast since the 
+colorization of the display also takes into account loud
+sections of the audio.  However, the <i>sensitivity</i>
+parameter enhances the quiet regions of the audio so
+that pitch banding is more visible as demonstrated
+in the following figure.
+
+<p>
+<center>
+<img src=img/chronogram-sensitivity.png border=0>
+</center>
+
+<p>
+Here is a plot of the sensitivity mapping which is used.
+When the sensitivity is set to 0.00, the waveform amplitudes
+are unchanged.  As the sensitivity factor is raised to 1.0, 
+low amplitude values are increased, while high amplitude
+values stay (mostly) the same.
+
+<p>
+<center>
+<img src=img/chronogram-amplitude-mapping.png border=0>
+</center>
+
+
+@SEEALSO:
+
+@LIMITATIONS:  Currently only allows for integer periods, so not	
+	all frequencies can be represented as horizontal lines.  
+	Will add a non-integer correction factor sometime in the
+	future...
+
+@BUGS: 
+
+@BEGIN:	REFERENCES
+@REFERENCE:
+@END:	REFERENCES
+
+@END:	SVPLUGIN
+

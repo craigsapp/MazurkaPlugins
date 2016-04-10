@@ -1,0 +1,215 @@
+<!---------------------------------------------------------------------------->
+<html>
+<head>
+<title> Mazurka Plugins for Sonic Visualiser</title>
+<meta name="Document-Owner" content="Craig Sapp (craig@ccrma.stanford.edu)">
+<meta name="Author" content="Craig Stuart Sapp (craig@ccrma.stanford.edu)">
+<meta name="Creation-Date" content=" Sat May  6 19:29:02 PDT 2006 ">
+<meta name="Revision-Date" content=" Sat May  6 19:29:10 PDT 2006 ">
+<style type="text/css">
+<!--
+.commandname { font-weight: bold;
+            text-decoration: none;
+            font-size: 125%;
+            color: #116611}
+.program {  text-decoration: none;
+            }
+-->
+</style>
+</head>
+</head>
+<!---------------------------------------------------------------------------->
+<body bgcolor=#ffffff alink=#339933 link=#339933 vlink=#339933 text=#220000>
+<!-- header *************************************************** -->
+
+<center>
+<table width=760 cellpadding=0 cellspacing=0 border=0>
+<tr valign=top>
+<td>
+   <a href=http://www.charm.rhul.ac.uk><img alt="" border=0 src=../../../images/logo.gif></a>
+</td>
+<td>
+   <a href=http://mazurka.org.uk><img alt="" border=0 src=../../../images/banner.gif></a>
+</td>
+</tr>
+</table>
+</center>
+
+
+<!-- ------------------------------------------------------------- -->
+
+<center>
+<table width=650>
+<tr><td>
+
+<center>
+<img src=img/svmazurkaplugins.png alt="Mazurka Plugins for Sonic Visualiser">
+<h3> Mazurka Project Plugins for Sonic Visualiser</h3>
+</center>
+<center>
+<table><tr valign=top><td>
+<ul>
+<li> <a class=program href=http://sv1.sourceforge.net>Sonic Visualiser homepage</a>
+<li> <a class=program href=http://sonicvisualiser.org/vamp.html>Other vamp plugins</a>
+</ul>
+</td><td>
+<ul>
+<li> <a class=program href=download>Download compiled mazurka plugins</a>
+</ul>
+</td></tr></table>
+</center>
+
+
+<p>
+
+<table cellpadding=0 width=100%>
+<tr valign=top><td>
+<b>Time-based plugins</b><br>
+<a class=program 
+    href=MzChronogram><small><i><sub>Mz</sub></i></small>Chronogram</a>
+    <br>
+<a class=program 
+    href=MzPowerCurve><small><i><sub>Mz</sub></i></small>PowerCurve</a>
+    <br>
+<a class=program 
+   href=MzAttack><small><i><sub>Mz</sub></i></small>Attack</a>
+   <br>
+</td>
+
+<td>
+<b>Frequency-based plugins</b><br>
+<a class=program 
+    href=MzSpectralFlux><small><i><sub>Mz</sub></i></small>SpectralFlux</a>
+    <br>
+<a class=program 
+    href=MzHarmonicSpectrum><small><i><sub>Mz</sub></i></small>HarmonicSpectrum</a>
+    <br>
+<a class=program 
+    href=MzNevermore><small><i><sub>Mz</sub></i></small>Nevermore</a>
+    <br>
+</td>
+
+<td>
+<b>Programming Resources</b><br>
+<a class=program 
+    href=MzSpectrogramHost><small><i><sub>Mz</sub></i></small>SpectrogramHost</a>
+   <br>
+<a class=program 
+     href=MzSpectrogramClient><small><i><sub>Mz</sub></i></small>SpectrogramClient</a>
+   <br>
+<a class=program 
+     href=MzSpectrogramFFTW><small><i><sub>Mz</sub></i></small>SpectrogramFFTW</a>
+   <br>
+</td>
+
+</tr>
+</table>
+
+
+<pre>
+
+
+</pre>
+
+
+<hr noshade>
+<p>
+<i>Plugins arranged by output type:</i>
+
+<table cellpadding=0 width=100%>
+<tr valign=top><td width=33%>
+<b>Instants</b><br>
+<a class=program 
+   href=MzAttack><small><i><sub>Mz</sub></i></small>Attack</a>
+   <br>
+<a class=program 
+    href=MzSpectralFlux><small><i><sub>Mz</sub></i></small>SpectralFlux</a>
+    <br>
+</td>
+
+<td width=33%>
+<b>Functions</b><br>
+<a class=program 
+   href=MzPowerCurve><small><i><sub>Mz</sub></i></small>PowerCurve</a>
+   <br>
+<a class=program 
+   href=MzHarmonicSpectrum><small><i><sub>Mz</sub></i></small>HarmonicSpectrum</a>
+   <br>
+<a class=program 
+   href=MzAttack><small><i><sub>Mz</sub></i></small>Attack</a>
+   <br>
+<a class=program 
+    href=MzSpectralFlux><small><i><sub>Mz</sub></i></small>SpectralFlux</a>
+    <br>
+
+</td>
+
+<td width=33%>
+<b>Grids</b><br>
+<a class=program 
+   href=MzChronogram><small><i><sub>Mz</sub></i></small>Chronogram</a>
+   <br>
+<a class=program 
+   href=MzHarmonicSpectrum><small><i><sub>Mz</sub></i></small>HarmonicSpectrum</a>
+   <br>
+<a class=program 
+   href=MzSpectrogramHost><small><i><sub>Mz</sub></i></small>SpectrogramHost</a>
+   <br>
+<a class=program 
+   href=MzSpectrogramClient><small><i><sub>Mz</sub></i></small>SpectrogramClient</a>
+   <br>
+<a class=program 
+   href=MzSpectrogramFFTW><small><i><sub>Mz</sub></i></small>SpectrogramFFTW</a>
+   <br>
+<a class=program 
+    href=MzNevermore><small><i><sub>Mz</sub></i></small>Nevermore</a>
+    <br>
+<a class=program 
+    href=MzSpectralFlux><small><i><sub>Mz</sub></i></small>SpectralFlux</a>
+    <br>
+</td>
+
+</tr></table>
+</center>
+
+
+<a name=alphabetical> </a>
+<pre>
+
+
+</pre>
+<p>
+  <center><b>Alphabetical listing of the plugins:</b></center> <p>
+
+<center>
+<!-- <table width=550 bgcolor=#e2dfc7> -->
+<table width=550 bgcolor=#e2dfc7>
+<tr><td>
+
+<<contents>>
+
+
+</td></tr></table>
+</center>
+
+
+<pre>
+
+
+</pre>
+
+
+
+
+<pre>
+
+
+</pre>
+
+</td></tr>
+</table>
+</center>
+
+</body>
+</html>
+

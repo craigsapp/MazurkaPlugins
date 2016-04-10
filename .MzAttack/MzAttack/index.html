@@ -1,0 +1,166 @@
+<!---------------------------------------------------------------------------->
+<html>
+<head>
+<title> Manpage for SV Mazurka Plugin: MzAttack</title>
+<meta name="Document-Owner" content="Craig Sapp (craig@ccrma.stanford.edu)"> 
+<meta name="Author" content="Craig Stuart Sapp (craig@ccrma.stanford.edu)">
+<meta name="Creation-Date" content=" Wed Mar  9 15:11:34 PST 2005 ">
+<meta name="Revision-Date" content=" Wed Mar  9 15:11:34 PST 2005 ">
+<style type="text/css">
+<!-- 
+.pluginname { font-weight: bold;
+            text-decoration: none; 
+            font-size: 125%;
+            color: #116611}
+
+.plugintitlesv { font-weight: bold;
+            text-decoration: none; 
+            font-size: 200%;
+            color: #2faa15}
+
+.mydd dd {
+	margin-left: 0;
+	margin-bottom: 0.25em;}
+
+
+.plugintitlemz { font-weight: bold;
+            text-decoration: none; 
+            font-style: italic;
+            font-size: 150%;
+            color: #d61b1a}
+
+.link {  text-decoration: none;  }
+
+.function {  text-decoration: none; 
+             font-style: italic; }
+
+.indexitem { text-decoration: none; }
+            
+-->
+</style>
+</head>
+</head>
+
+
+<body bgcolor=#ffffff alink=#339933 link=#339933 vlink=#339933 text=#220000>
+<!-- header *************************************************** -->
+
+<center>
+<table width=760 cellpadding=0 cellspacing=0 border=0>
+<tr valign=top>
+<td>
+   <a href=http://www.charm.rhul.ac.uk><img alt="" border=0 src=../images/logo.gif></a>
+</td>
+<td>
+   <a href=http://mazurka.org.uk><img alt="" border=0 src=../images/banner.gif></a>
+</td>
+</tr>
+</table>
+<center>
+
+
+<!-- ------------------------------------------------------------- -->
+
+
+<center>
+<table width=600>
+<tr><td>
+
+<center>
+<table width=731 cellspacing=0 cellpadding=0>
+<tr width=731 height=78 valign=bottom><td width=231><a href=http://sv.mazurka.org.uk><img src=../img/svmazurkaplugin.png alt="SV Mazurka Plugin:" border=0></a></td>
+<td width=500 height=90><table cellpadding=0 cellspacing=0 width=500 height=90><tr height=73><td valign=bottom><center><span class=plugintitlemz><sub>Mz</sub></span><span class=plugintitlesv>Attack</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</center></td></tr>
+<tr height=5><td></td></tr>
+<tr height=12><td><img src=../img/svpluginline.png alt="" border=0></td></tr></table>
+</td></tr></table>
+</center>
+<p>
+
+
+<font color=#bb9966><h3><i>SYNOPSIS</i></h3></font>
+<ul><b><small><small><i>Mz</i></small></small>Attack</b> -- Identify note attacks in the audio data. 
+</ul>
+<ul>
+Generates a detection function and also uses that function to decide where actual  note attacks in the audio are located.
+ 
+ 
+
+</ul>
+
+<a name=options></a>
+
+<font color=#bb9966><h3><i>OUTPUTS</i></h3></font>
+<ul><small><small><i>Mz</i></small></small>Attack generates 2 outputs:<p>
+<dl class=mydd>
+<dt>1. <i><b><font color=#bb9966>Attack detection function</font></b></i>
+<dd><ul><span class=noindent>A function in the range from 0 to 1.  A value of 0 means
+         that a note attack at that time in the audio is very 
+         unlikely.  A value above 0.2 means that the existance of
+         an attack at that location in time is highly likely.
+ 
+</span></ul>
+
+<dt>2. <i><b><font color=#bb9966>Detected attacks</font></b></i>
+<dd><ul><span class=noindent>Using the attack detection function, this output gives
+ 	estimated locations of note attacks in the audio data.
+         
+</span></ul>
+
+</dl>
+</ul>
+<a name=description></a>
+
+<font color=#bb9966><h3><i>DESCRIPTION</i></h3></font>
+<ul> 
+ <p> Here is an example output display from <small><small><i>Mz</i></small></small>Attack:
+ 
+ <p>
+ <center>
+ <img src=img/attackexamples.png border=0>
+ </center>
+ 
+ <p>The black curve is the <i>attack detection function</i>, 
+ and the orange lines are the <i>detected attacks</i>.  The
+ output data is super-imposed on top of the original audio waveform
+ which is shown in purple.
+ 
+ 
+ 
+
+</ul>
+<a name=limitations></a>
+
+<font color=#bb9966><h3><i>LIMITATIONS</i></h3></font>
+<ul>   Initial draft of the plugin, should improve with some more work.
+   The detected attacks contains significant false negatives, but
+   not too many false positives.
+ 
+  
+
+</ul>
+<a name=bugs></a>
+
+<a name=download></a>
+
+<font color=#bb9966><h3><i>DOWNLOAD</i></h3></font>
+<ul>
+Compiled versions of the <small><small><i>Mz</i></small></small>Attack plugin can
+be downloaded from the <a class=link href=../download>download page</a>.
+</ul>
+<a name=seealso></a>
+
+<a name=allusions></a>
+
+
+<pre>
+
+
+
+</pre>
+</td></tr>
+</table>
+</center>
+
+</body>
+</html>
+

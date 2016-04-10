@@ -1,0 +1,659 @@
+<!---------------------------------------------------------------------------->
+<html>
+<head>
+<title> Sig++ example program: MzNevermore.cpp </title>
+<meta name="Document-Owner" content="Craig Sapp (craig@ccrma.stanford.edu)"> 
+<meta name="Author" content="Craig Stuart Sapp (craig@ccrma.stanford.edu)">
+<meta name="Creation-Date" content=" Tue May  9 19:38:11 PDT 2000 ">
+<meta name="Revision-Date" content=" Wed Dec 27 07:42:40 PST 2006
+ ">
+</head>
+
+<body bgcolor=#ffffff alink=#333399 link=#333399 vlink=#333399 text=#220000>
+<!-- header *************************************************** -->
+
+<center>
+<table width=760 cellpadding=0 cellspacing=0 border=0>
+<tr valign=top>
+<td>
+   <a href=http://www.charm.rhul.ac.uk><img alt="" border=0 src=../../images/logo.gif></a>
+</td>
+<td>
+   <a href=http://mazurka.org.uk><img alt="" border=0 src=../../images/banner.gif></a>
+</td>
+</tr>
+</table>
+</center>
+
+<center>
+<table><tr><td>
+
+
+<pre>
+<font color=#229933>//</font>
+<font color=#229933>// Programmer:    Craig Stuart Sapp &lt;craig@ccrma.stanford.edu&gt;</font>
+<font color=#229933>// Creation Date: Tue May  9 05:25:27 PDT 2006</font>
+<font color=#229933>// Last Modified: Sat May 20 05:41:31 PDT 2006 (added parameters)</font>
+<font color=#229933>// Last Modified: Thu May 25 22:27:53 PDT 2006 (added stereo diff & sensitivity)</font>
+<font color=#229933>// Last Modified: Thu Jul 20 06:54:55 PDT 2006 (added log/linear vertical scale)</font>
+<font color=#229933>// Filename:      MzNevermore.cpp</font>
+<font color=#229933>// URL:           <a href=http://sv.mazurka.org.uk/src/MzNevermore.cpp>http://sv.mazurka.org.uk/src/MzNevermore.cpp</a></font>
+<font color=#229933>// Documentation: <a href=http://sv.mazurka.org.uk/MzNevermore>http://sv.mazurka.org.uk/MzNevermore</a></font>
+<font color=#229933>// Syntax:        ANSI99 C++; vamp plugin</font>
+<font color=#229933>//</font>
+<font color=#229933>// Description:   Display audio signal in two dimensions.</font>
+<font color=#229933>//</font>
+
+#include "MzNevermore.h" 
+#include &lt;stdio.h&gt;
+#include &lt;string&gt;
+#include &lt;math.h&gt;
+
+#define DB_MIN -120
+
+#define S_LINEAR 0
+#define S_LOG    1
+
+<font color=#229933>///////////////////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// Vamp Interface Functions</font>
+<font color=#229933>//</font>
+<a name=constructor>
+</a><font color=#229933>///////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzNevermore::MzNevermore</b> -- class constructor.</font>
+<font color=#229933>//</font>
+
+MzNevermore::MzNevermore(float samplerate) :<a name=MazurkaPlugin> </a><font color=#000000><b>MazurkaPlugin</b></font>(samplerate) {
+   mz_transformsize =  1024;
+   mz_minbin        =  0;
+   mz_maxbin        =  511;
+   mz_compress      =  0;
+   mz_scale         =  S_LINEAR;
+}
+
+
+<a name=destructor>
+</a><font color=#229933>///////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzNevermore::~MzNevermore</b> -- class destructor.</font>
+<font color=#229933>//</font>
+
+MzNevermore::~MzNevermore() {
+   <font color=#229933>// do nothing</font>
+}
+
+
+<font color=#229933>////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// parameter functions --</font>
+<font color=#229933>//</font>
+<a name=getParameterDescriptors>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzNevermore::getParameterDescriptors</b> -- return a list of</font>
+<font color=#229933>//      the parameters which can control the plugin.</font>
+<font color=#229933>//</font>
+      <font color=#229933>// </font>
+      <font color=#229933>//    "windowsamples"    -- number of samples in audio window</font>
+      <font color=#229933>//    "transformsamples" -- number of samples in transform</font>
+      <font color=#229933>//    "stepsamples"      -- number of samples between analysis windows</font>
+      <font color=#229933>//    "minbin"           -- lowest transform bin to display</font>
+      <font color=#229933>//    "maxbin"           -- highest transform bin to display</font>
+
+MzNevermore::ParameterList MzNevermore::getParameterDescriptors(void) const {
+
+   ParameterList       pdlist;
+   ParameterDescriptor pd;
+
+   <font color=#229933>// first parameter: The number of samples in the audio window</font>
+   pd.name         = "windowsamples";
+   pd.description  = "Window size";
+   pd.unit         = "samples";
+   pd.minValue     = 2.0;
+   pd.maxValue     = 10000;
+   pd.defaultValue = 1500.0;
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+
+   <font color=#229933>// second parameter: The number of samples in the Fourier transform</font>
+   <font color=#229933>// Note: must be equal or greater than the window size.  This will</font>
+   <font color=#229933>// be enforced in the initialise() function.</font>
+   pd.name         = "transformsamples";
+   pd.description  = "Transform size";
+   pd.unit         = "samples";
+   pd.minValue     = 2.0;
+   pd.maxValue     = 30000.0;
+   pd.defaultValue = 2048.0;   
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+
+   <font color=#229933>// third parameter: The step size between analysis windows.</font>
+   pd.name         = "stepsamples";
+   pd.description  = "Step size";
+   pd.unit         = "samples";
+   pd.minValue     = 2.0;
+   pd.maxValue     = 30000.0;
+   pd.defaultValue = 512.0; 
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+
+   <font color=#229933>// fourth parameter: The minimum bin number to display.</font>
+   <font color=#229933>// Note: must be less or equal to the maximum bin size.</font>
+   <font color=#229933>// This will be enforced in the initialise() function.</font>
+   pd.name         = "minbin";
+   pd.description  = "Min spectral bin";
+   pd.unit         = "bin";
+   pd.minValue     = 0.0;
+   pd.maxValue     = 30000.0;
+   pd.defaultValue = 0.0; 
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+
+   <font color=#229933>// fifth parameter: The minimum bin number to display in terms</font>
+   <font color=#229933>// of frequency.  This will override "minbin" if set to a value</font>
+   <font color=#229933>// other than 0.0;</font>
+   pd.name         = "minfreq";
+   pd.description  = "         or in Hz:";
+   pd.unit         = "Hz";
+   pd.minValue     = 0.0;
+   pd.maxValue     = getSrate()/2.0;
+   pd.defaultValue = 0.0;
+   pd.isQuantized  = false;
+   <font color=#229933>//pd.quantizeStep = 1.0;</font>
+   pdlist.push_back(pd);
+
+   <font color=#229933>// sixth parameter: The maximum bin number to display.</font>
+   <font color=#229933>// Note: must be greater or equal to the mininimum bin size,</font>
+   <font color=#229933>// and smaller than the transform size.  This will</font>
+   <font color=#229933>// be enforced in the initialise() function.</font>
+   pd.name         = "maxbin";
+   pd.description  = "Max spectral bin";
+   pd.unit         = "bin";
+   pd.minValue     = 0.0;
+   pd.maxValue     = 30000.0;
+   pd.defaultValue = 2048.0;   
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+
+   <font color=#229933>// seventh parameter: The maximum bin number to display in </font>
+   <font color=#229933>// terms of frequency.  This will override "maxbin" if set</font>
+   <font color=#229933>// to a value other than 0.0</font>
+   pd.name         = "maxfreq";
+   pd.description  = "         or in Hz:";
+   pd.unit         = "Hz";
+   pd.minValue     = 0.0;
+   pd.maxValue     = getSrate()/2.0;
+   pd.defaultValue = pd.minValue;
+   pd.isQuantized  = false;
+   <font color=#229933>// pd.quantizeStep = 1.0;</font>
+   pdlist.push_back(pd);
+
+   <font color=#229933>// eighth parameter: Magnitude range compression.</font>
+   pd.name         = "compress";
+   pd.description  = "Compress range";
+   pd.unit         = "";
+   pd.minValue     = 0.0;
+   pd.maxValue     = 1.0;
+   pd.defaultValue = 1.0;
+   pd.valueNames.push_back("no");
+   pd.valueNames.push_back("yes");
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+   pd.valueNames.clear();
+
+   <font color=#229933>// ninth parameter: Signal windowing method</font>
+   pd.name         = "windowtype";
+   pd.description  = "Window type";
+   pd.unit         = "";
+   MazurkaWindower::getWindowList(pd.valueNames);
+   pd.minValue     = 1.0;
+   pd.maxValue     = pd.valueNames.size();
+   pd.defaultValue = 2.0;                   <font color=#229933>// probably the Hann window</font>
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+   pd.valueNames.clear();
+
+   <font color=#229933>// tenth parameter: Vertical scaling type</font>
+   pd.name         = "scale";
+   pd.description  = "Frequency scale";
+   pd.unit         = "";
+   pd.valueNames.push_back("Hertz");
+   pd.valueNames.push_back("Interval");
+   pd.minValue     = 0.0;
+   pd.maxValue     = 1.0;
+   pd.defaultValue = 0.0;
+   pd.isQuantized  = true;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+   pd.valueNames.clear();
+
+   return pdlist;
+}
+
+
+<font color=#229933>////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// optional polymorphic functions inherited from PluginBase:</font>
+<font color=#229933>//</font>
+<a name=getPreferredStepSize>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzNevermore::getPreferredStepSize</b> -- overrides the </font>
+<font color=#229933>//     default value of 0 (no preference) returned in the </font>
+<font color=#229933>//     inherited plugin class.</font>
+<font color=#229933>//</font>
+
+size_t MzNevermore::getPreferredStepSize(void) const {
+   return getParameterInt("stepsamples");
+}
+
+
+<a name=getPreferredBlockSize>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzNevermore::getPreferredBlockSize</b> -- overrides the </font>
+<font color=#229933>//     default value of 0 (no preference) returned in the </font>
+<font color=#229933>//     inherited plugin class.</font>
+<font color=#229933>//</font>
+
+size_t MzNevermore::getPreferredBlockSize(void) const {
+ 
+   int transformsize = getParameterInt("transformsamples");
+   int blocksize     = getParameterInt("windowsamples");
+
+   if (blocksize &gt; transformsize) {
+      blocksize = transformsize;
+   }
+
+   return blocksize;
+}
+
+
+<font color=#229933>////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// required polymorphic functions inherited from PluginBase:</font>
+<font color=#229933>//</font>
+
+std::string MzNevermore::getName(void) const
+   { return "mznevermore"; }
+
+std::string MzNevermore::getMaker(void) const
+   { return "The Mazurka Project"; }
+
+std::string MzNevermore::getCopyright(void) const
+   { return "2006 Craig Stuart Sapp"; }
+
+std::string MzNevermore::getDescription(void) const
+   { return "Nevermore Spectrogram"; }
+
+int MzNevermore::getPluginVersion(void) const {
+   #define P_VER    "200606200"
+   #define P_NAME   "MzNevermore"
+
+   const char *v = "@@VampPluginID@" P_NAME "@" P_VER "@" __DATE__ "@@";
+   if (v[0] != '@') { std::cerr &lt;&lt; v &lt;&lt; std::endl; return 0; }
+
+   return atol(P_VER);
+}
+
+
+<font color=#229933>////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// required polymorphic functions inherited from Plugin:</font>
+<font color=#229933>//</font>
+<a name=getInputDomain>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzNevermore::getInputDomain</b> -- the host application needs</font>
+<font color=#229933>//    to know if it should send either:</font>
+<font color=#229933>//</font>
+<font color=#229933>// TimeDomain      == Time samples from the audio waveform.</font>
+<font color=#229933>// FrequencyDomain == Spectral frequency frames which will arrive</font>
+<font color=#229933>//                    in an array of interleaved real, imaginary</font>
+<font color=#229933>//                    values for the complex spectrum (both positive </font>
+<font color=#229933>//                    and negative frequencies). Zero Hz being the</font>
+<font color=#229933>//                    first frequency sample and negative frequencies</font>
+<font color=#229933>//                    at the far end of the array as is usually done.</font>
+<font color=#229933>//                    Note that frequency data is transmitted from</font>
+<font color=#229933>//                    the host application as floats.  The data will</font>
+<font color=#229933>//                    be transmitted via the process() function which</font>
+<font color=#229933>//                    is defined further below.</font>
+<font color=#229933>//</font>
+
+MzNevermore::InputDomain MzNevermore::getInputDomain(void) const { 
+   return TimeDomain; 
+}
+
+
+<a name=getOutputDescriptors>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzNevermore::getOutputDescriptors</b> -- return a list describing</font>
+<font color=#229933>//    each of the available outputs for the object.  OutputList</font>
+<font color=#229933>//    is defined in the file vamp-sdk/Plugin.h:</font>
+<font color=#229933>//</font>
+<font color=#229933>// .name             == short name of output for computer use.  Must not</font>
+<font color=#229933>//                      contain spaces or punctuation.</font>
+<font color=#229933>// .description      == long name of output for human use.</font>
+<font color=#229933>// .unit             == the units or basic meaning of the data in the </font>
+<font color=#229933>//                      specified output.</font>
+<font color=#229933>// .hasFixedBinCount == true if each output feature (sample) has the </font>
+<font color=#229933>//                      same dimension.</font>
+<font color=#229933>// .binCount         == when hasFixedBinCount is true, then this is the </font>
+<font color=#229933>//                      number of values in each output feature.  </font>
+<font color=#229933>//                      binCount=0 if timestamps are the only features,</font>
+<font color=#229933>//                      and they have no labels.</font>
+<font color=#229933>// .binNames         == optional description of each bin in a feature.</font>
+<font color=#229933>// .hasKnownExtent   == true if there is a fixed minimum and maximum</font>
+<font color=#229933>//                      value for the range of the output.</font>
+<font color=#229933>// .minValue         == range minimum if hasKnownExtent is true.</font>
+<font color=#229933>// .maxValue         == range maximum if hasKnownExtent is true.</font>
+<font color=#229933>// .isQuantized      == true if the data values are quantized.  Ignored</font>
+<font color=#229933>//                      if binCount is set to zero.</font>
+<font color=#229933>// .quantizeStep     == if isQuantized, then the size of the quantization,</font>
+<font color=#229933>//                      such as 1.0 for integers.</font>
+<font color=#229933>// .sampleType       == Enumeration with three possibilities:</font>
+<font color=#229933>//   OD::OneSamplePerStep   -- output feature will be aligned with</font>
+<a name=VariableSampleRate><font color=#229933>//                             the beginning time of the input block data.</font>
+</a><font color=#229933>//   OD::FixedSampleRate    -- results are evenly spaced according to </font>
+<font color=#229933>//                             .sampleRate (see below).</font>
+<font color=#229933>//   <b>OD::VariableSampleRate</b> -- output features have individual timestamps.</font>
+<font color=#229933>// .sampleRate       == samples per second spacing of output features when</font>
+<font color=#229933>//                      sampleType is set toFixedSampleRate.</font>
+<font color=#229933>//                      Ignored if sampleType is set to OneSamplePerStep</font>
+<font color=#229933>//                      since the start time of the input block will be used.</font>
+<font color=#229933>//                      Usually set the sampleRate to 0.0 if VariableSampleRate</font>
+<font color=#229933>//                      is used; otherwise, see vamp-sdk/Plugin.h for what</font>
+<font color=#229933>//                      positive sampleRates would mean.</font>
+<font color=#229933>//</font>
+
+MzNevermore::OutputList MzNevermore::getOutputDescriptors(void) const {
+
+   OutputList       odlist;
+   OutputDescriptor od;
+
+   std::string s;
+   char buffer[1024] = {0};
+   int val;
+
+   <font color=#229933>// First and only output channel:</font>
+   od.name             = "spectrogram";
+   od.description      = "Spectrogram";
+   od.unit             = "bin";
+   od.hasFixedBinCount = true;
+   od.binCount         = mz_maxbin - mz_minbin + 1;
+
+   if (getParameterInt("scale") == S_LINEAR) {
+      for (int i=mz_minbin; i&lt;=mz_maxbin; i++) {
+         val = int((i+0.5) * getSrate() / mz_transformsize + 0.5);
+         sprintf(buffer, "%d:%d", i, val);
+         s = buffer;
+         od.binNames.push_back(s);
+      }
+   } else {
+
+      int ii;
+      double loghz;
+      double hz;
+      double minhz = mz_minbin * getSrate() / mz_transformsize;
+      double maxhz = mz_maxbin * getSrate() / mz_transformsize;
+
+      if (minhz &lt; 1.0) { minhz = 1.0; }
+      if (maxhz &lt; 1.0) { maxhz = 1.0; }
+
+      double minhzlog = log10(minhz) / log10(2.0);
+      double maxhzlog = log10(maxhz) / log10(2.0);
+      double logdiff = maxhzlog - minhzlog;
+
+      for (int i=0; i&lt;=(int)od.binCount; i++) {
+         loghz = (double)i/(od.binCount-1.0) * logdiff + minhzlog;
+         hz = pow(2.0, loghz);
+         int hzint = int(hz + 0.5);
+	 ii = int(hz * mz_transformsize / getSrate());
+
+         sprintf(buffer, "%d:%d", ii, hzint);
+         s = buffer;
+         od.binNames.push_back(s);
+      }
+   }
+
+   if (mz_compress) {
+      od.hasKnownExtents  = true;
+      od.minValue         = 0.0;
+      od.maxValue         = 1.0;
+   } else {
+      od.hasKnownExtents  = false;
+   }
+   od.isQuantized      = false;
+   <font color=#229933>// od.quantizeStep  = 1.0;</font>
+   od.sampleType       = OutputDescriptor::OneSamplePerStep;
+   <font color=#229933>// od.sampleRate    = 0.0;</font>
+   odlist.push_back(od);
+   od.binNames.clear();
+
+
+   return odlist; 
+}
+
+
+<a name=initialise>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzNevermore::initialise</b> -- this function is called once</font>
+<font color=#229933>//     before the first call to process().</font>
+<font color=#229933>//</font>
+
+bool MzNevermore::initialise(size_t channels, size_t stepsize, 
+      size_t blocksize) {
+
+
+
+   if (channels &lt; getMinChannelCount() || channels &gt; getMaxChannelCount()) {
+      return false;
+   }
+
+   <font color=#229933>// step size and block size should never be zero</font>
+   if (stepsize &lt;= 0 || blocksize &lt;= 0) {
+      return false;
+   }
+
+   setChannelCount(channels);
+   setStepSize(stepsize);
+   setBlockSize(blocksize);
+
+   mz_compress = getParameterInt("compress");
+   mz_scale    = getParameterInt("scale");
+
+   mz_transformsize = getParameterInt("transformsamples");
+   if (mz_transformsize &lt; getBlockSize()) {
+      std::cerr &lt;&lt; "MzNevermore::initialize: transform size problem" 
+                &lt;&lt; std::endl;
+      std::cerr &lt;&lt; "MzNevermore::initialize: transformsize = " 
+                &lt;&lt; mz_transformsize &lt;&lt; std::endl;
+      std::cerr &lt;&lt; "MzNevermore::initialize: blocksize = " 
+                 &lt;&lt; getBlockSize() &lt;&lt; std::endl;
+      return false; 
+   }
+
+   mz_minbin     = getParameterInt("minbin");
+   mz_maxbin     = getParameterInt("maxbin");
+
+   if (getParameter("minfreq") &gt; 0.0) {
+      <font color=#229933>// rounding down to the lower integer value</font>
+      mz_minbin = int(getParameter("minfreq") / (getSrate()/mz_transformsize));
+   }
+   if (getParameter("maxfreq") &gt; 0.0) {
+      <font color=#229933>// rounding up to the next higher integer value</font>
+      mz_maxbin = int(getParameter("maxfreq") / 
+                      (getSrate()/mz_transformsize) + 0.999);
+   }
+
+   if (mz_maxbin &gt;= mz_transformsize) { mz_maxbin = mz_transformsize / 2 - 1; }
+   if (mz_minbin &gt;= mz_transformsize) { mz_minbin = mz_transformsize / 2 - 1; }
+   if (mz_minbin &gt; mz_maxbin)         { std::swap(mz_minbin, mz_maxbin); }
+   if (mz_minbin &lt; 0)                 { mz_minbin = 0; }
+   if (mz_maxbin &lt; 0)                 { mz_maxbin = 0; }
+
+   mz_transformer.setSize(mz_transformsize);
+   mz_windower.setSize(getBlockSize());
+   mz_windower.makeWindow(getParameterString("windowtype"));
+
+std::cerr &lt;&lt; "MzNevermore::initialize : window is set to " 
+          &lt;&lt; getParameterString("windowtype") &lt;&lt; std::endl;
+
+
+   return true;
+}
+
+
+<a name=process>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzNevermore::process</b> -- This function is called sequentially on the </font>
+<font color=#229933>//    input data, block by block.  After the sequence of blocks has been</font>
+<font color=#229933>//    processed with process(), the function getRemainingFeatures() will </font>
+<font color=#229933>//    be called.</font>
+<font color=#229933>//</font>
+<font color=#229933>// Here is a reference chart for the Feature struct:</font>
+<font color=#229933>//</font>
+<font color=#229933>// .hasTimestamp   == If the OutputDescriptor.sampleType is set to</font>
+<font color=#229933>//                    VariableSampleRate, then this should be "true".</font>
+<font color=#229933>// .timestamp      == The time at which the feature occurs in the time stream.</font>
+<font color=#229933>// .values         == The float values for the feature.  Should match</font>
+<font color=#229933>//                    OD::binCount.</font>
+<font color=#229933>// .label          == Text associated with the feature (for time instants).</font>
+<font color=#229933>//</font>
+
+#define<a name=sigmoidscale> </a><font color=#000000><b>sigmoidscale</b></font>(x,c,w)  (1.0/(1.0+exp(-((x)-(c))/((w)/8.0))))
+
+MzNevermore::FeatureSet MzNevermore::process(float **inputbufs, 
+      Vamp::RealTime timestamp) {
+
+   if (getStepSize() &lt;= 0) {
+      std::cerr &lt;&lt; "ERROR: MzNevermore::process: "
+                &lt;&lt; "MzNevermore has not been initialized"
+                &lt;&lt; std::endl;
+      return FeatureSet();
+   }
+
+   FeatureSet returnFeatures;
+   Feature feature;
+
+   feature.hasTimestamp = false;
+
+   mz_windower.windowNonCausal(mz_transformer, inputbufs[0], getBlockSize());
+
+   mz_transformer.doTransform();
+
+   int bincount = mz_maxbin - mz_minbin + 1;
+   feature.values.resize(bincount);
+
+   int i;
+   double ii;
+   if (mz_scale == S_LINEAR) {
+      for (i=0; i&lt;bincount; i++) {
+         feature.values[i] = mz_transformer.getSpectrumMagnitudeDb(i);
+      }
+   } else { <font color=#229933>// logarithmic scaling</font>
+      std::vector&lt;double&gt; dbs;
+      dbs.resize(bincount);
+
+      for (i=0; i&lt;bincount; i++) {
+         dbs[i] = mz_transformer.getSpectrumMagnitudeDb(i);
+	 if (dbs[i] &lt; DB_MIN) {
+            dbs[i] = DB_MIN;
+         }
+      }
+
+      double minhz = mz_minbin * getSrate() / mz_transformsize;
+      double maxhz = mz_maxbin * getSrate() / mz_transformsize;
+      if (minhz &lt; 1.0) { minhz = 1.0; }
+      if (maxhz &lt; 1.0) { maxhz = 1.0; }
+      double gincr = pow(maxhz / minhz, 1.0 / bincount);
+      double hz;
+      for (i=0; i&lt;bincount; i++) {
+         hz = minhz * pow(gincr, i);
+	 ii = hz * mz_transformsize / getSrate();
+	 if (ii &gt; bincount -1) { ii = bincount - 1; }
+	 else if (ii &lt; 0     ) { ii = 0           ; }
+
+         feature.values[i] = dbs[int(ii+0.5)];
+      }
+
+   }
+
+   if (mz_compress) {
+      for (i=0; i&lt;bincount; i++) {
+         feature.values[i] = <a href=#sigmoidscale>sigmoidscale</a>(feature.values[i], -20, 80);
+      }
+   }
+
+   returnFeatures[0].push_back(feature);
+
+   return returnFeatures;
+}
+
+
+<a name=getRemainingFeatures>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzNevermore::getRemainingFeatures</b> -- This function is called</font>
+<font color=#229933>//    after the last call to process() on the input data stream has </font>
+<font color=#229933>//    been completed.  Features which are non-causal can be calculated </font>
+<font color=#229933>//    at this point.  See the comment above the process() function</font>
+<font color=#229933>//    for the format of output Features.</font>
+<font color=#229933>//</font>
+
+MzNevermore::FeatureSet MzNevermore::getRemainingFeatures(void) {
+   <font color=#229933>// no remaining features, so return a dummy feature</font>
+   return FeatureSet();
+}
+
+
+<a name=reset>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzNevermore::reset</b> -- This function may be called after data processing</font>
+<font color=#229933>//    has been started with the process() function.  It will be called when</font>
+<font color=#229933>//    processing has been interrupted for some reason and the processing</font>
+<font color=#229933>//    sequence needs to be restarted (and current analysis output thrown out).  </font>
+<font color=#229933>//    After this function is called, process() will start at the beginning</font>
+<font color=#229933>//    of the input selection as if initialise() had just been called.</font>
+<font color=#229933>//    Note, however, that initialise() will NOT be called before processing </font>
+<font color=#229933>//    is restarted after a reset().</font>
+<font color=#229933>//</font>
+
+void MzNevermore::reset(void) {
+   <font color=#229933>// no actions necessary to reset this plugin</font>
+}
+
+
+<font color=#229933>///////////////////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// Non-Interface Functions </font>
+<font color=#229933>//</font>
+
+<font color=#229933>// no non-interface functions</font>
+
+
+</pre>
+
+
+</td></tr>
+</table>
+</center>
+
+
+
+
+</body>
+</html>
+   

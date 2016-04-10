@@ -1,0 +1,59 @@
+@BEGIN:	SVPLUGIN
+
+@NAME: MzAttack
+@APROPOS: Identify note attacks in the audio data.
+
+@SUMMARY:  Generates a detection function and also uses that function
+to decide where actual  note attacks in the audio are located.
+
+
+@BEGIN:	PARAMETERS
+@END:	PARAMETERS
+
+
+@BEGIN:	OUTPUTS
+
+@OUTPUT01: Attack detection function:
+	A function in the range from 0 to 1.  A value of 0 means
+        that a note attack at that time in the audio is very 
+        unlikely.  A value above 0.2 means that the existance of
+        an attack at that location in time is highly likely.
+
+@OUTPUT02: Detected attacks:
+	Using the attack detection function, this output gives
+	estimated locations of note attacks in the audio data.
+        
+@END:	OUTPUTS
+
+
+@DESCRIPTION:  
+
+<p> Here is an example output display from MzAttack:
+
+<p>
+<center>
+<img src=img/attackexamples.png border=0>
+</center>
+
+<p>The black curve is the <i>attack detection function</i>, 
+and the orange lines are the <i>detected attacks</i>.  The
+output data is super-imposed on top of the original audio waveform
+which is shown in purple.
+
+
+
+@LIMITATIONS: 
+  Initial draft of the plugin, should improve with some more work.
+  The detected attacks contains significant false negatives, but
+  not too many false positives.
+
+ 
+@BUGS:  
+
+@SEEALSO: 
+
+@BEGIN:	REFERENCES
+@REFERENCE:
+@END:	REFERENCES
+
+@END:	SVPLUGIN

@@ -1,0 +1,249 @@
+<!---------------------------------------------------------------------------->
+<html>
+<head>
+<title> Manpage for SV Mazurka Plugin: MzFindSilence</title>
+<meta name="Document-Owner" content="Craig Sapp (craig@ccrma.stanford.edu)"> 
+<meta name="Author" content="Craig Stuart Sapp (craig@ccrma.stanford.edu)">
+<meta name="Creation-Date" content=" Wed Mar  9 15:11:34 PST 2005 ">
+<meta name="Revision-Date" content=" Wed Mar  9 15:11:34 PST 2005 ">
+<style type="text/css">
+<!-- 
+.pluginname { font-weight: bold;
+            text-decoration: none; 
+            font-size: 125%;
+            color: #116611}
+
+.plugintitlesv { font-weight: bold;
+            text-decoration: none; 
+            font-size: 200%;
+            color: #2faa15}
+
+.mydd dd {
+	margin-left: 0;
+	margin-bottom: 0.25em;}
+
+.hanging { text-indent: -40px; }
+
+.plain { text-decoration: none; }
+
+
+.plugintitlemz { font-weight: bold;
+            text-decoration: none; 
+            font-style: italic;
+            font-size: 150%;
+            color: #d61b1a}
+
+.link {  text-decoration: none;  }
+
+.function {  text-decoration: none; 
+             font-style: italic; }
+
+.indexitem { text-decoration: none; }
+            
+-->
+</style>
+</head>
+</head>
+
+
+<body bgcolor=#ffffff alink=#339933 link=#339933 vlink=#339933 text=#220000>
+<!-- header *************************************************** -->
+
+<center>
+<table width=760 cellpadding=0 cellspacing=0 border=0>
+<tr valign=top>
+<td>
+   <a href=http://www.charm.rhul.ac.uk><img alt="" border=0 src=../images/logo.gif></a>
+</td>
+<td>
+   <a href=http://mazurka.org.uk><img alt="" border=0 src=../images/banner.gif></a>
+</td>
+</tr>
+</table>
+<center>
+
+
+<!-- ------------------------------------------------------------- -->
+
+
+<center>
+<table width=600>
+<tr><td>
+
+<center>
+<table width=731 cellspacing=0 cellpadding=0>
+<tr width=731 height=78 valign=bottom><td width=231><a href=http://sv.mazurka.org.uk><img src=../img/svmazurkaplugin.png alt="SV Mazurka Plugin:" border=0></a></td>
+<td width=500 height=90><table cellpadding=0 cellspacing=0 width=500 height=90><tr height=73><td valign=bottom><center><span class=plugintitlemz><sub>Mz</sub></span><span class=plugintitlesv>FindSilence</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</center></td></tr>
+<tr height=5><td></td></tr>
+<tr height=12><td><img src=../img/svpluginline.png alt="" border=0></td></tr></table>
+</td></tr></table>
+</center>
+<p>
+
+
+<font color=#bb9966><h3><i>SYNOPSIS</i></h3></font>
+<ul><b><small><small><i>Mz</i></small></small>FindSilence</b> -- Marks regions of silence in an audio file. 
+</ul>
+<a name=options></a>
+
+<font color=#bb9966><h3><i>OUTPUTS</i></h3></font>
+<ul><small><small><i>Mz</i></small></small>FindSilence generates 2 outputs:<p>
+<dl class=mydd>
+<dt>1. <i><b><font color=#bb9966></font></b></i>
+<dd><ul><span class=noindent></span></ul>
+
+<dt>2. <i><b><font color=#bb9966>Always Contains only two markers</font></b></i>
+<dd><ul><span class=noindent>(1) the start of the audio 	data after any initial silence. (2) the end of the audio data
+         before any final silence.
+ 
+</span></ul>
+
+</dl>
+</ul>
+<a name=description></a>
+
+<font color=#bb9966><h3><i>DESCRIPTION</i></h3></font>
+<ul>The description of the plugin goes here. 
+ <center>
+ 
+ 
+ 
+ <img src=img-latexeqn/equ1.png  border=0>
+ <!--
+ <div class=latexeqn name=equ1 size=+1>
+ R_b^{\mbox{\tiny opt}} = \frac{P}{K_p} + \frac{\log_2(10)}{20}   \
+    \left[ \mbox{SMR}_b - \frac{1}{K_p}  \sum_{R_c \ne 0}  K_c \  \
+    \mbox{SMR}_c \right]
+ </div>
+ -->
+ 
+ 
+ <br>
+ <br>
+ <img src=img-latexeqn/equ2.png  border=0>
+ <!--
+ <div class=latexeqn name=equ2 size=+1>
+ R_b^{\mbox{\tiny opt}} = R_{\mbox{\tiny avg}} + \
+    \frac{\log_2(10)}{20} \left[ \mbox{SMR}_b - \frac{1}{K}  \
+    \sum_{c}  K_c \  \mbox{SMR}_c \right]
+ </div>
+ -->
+ 
+ 
+ <br>
+ <br>
+ <img src=img-latexeqn/equ3.png  border=0>
+ <!--
+ <div class=latexeqn name=equ3 size=+1>
+ \mbox{SMR}_b = 20 \left( \log_{10} \left|x_\mbox{{\tiny max}$_b$}} \
+     \right| - log_{10} \ M_b \right)
+ </div>
+ -->
+ 
+ 
+ <br>
+ <br>
+ <img src=img-latexeqn/equ4.png  border=0>
+ <!--
+ <div class=latexeqn name=equ4 size=+1>
+ \mbox{SMR}_b = \mbox{dB}_{\mbox{\tiny (SPL)}} \mbox{of max amplitude \
+    in subblock} \ - \ \mbox{dB}_{\mbox{\tiny (SPL)}} \mbox{of mask \
+    amplitude for subblock}
+ </div>
+ -->
+ 
+ 
+ <br>
+ <br>
+ <img src=img-latexeqn/equ5.png  border=0>
+ <!--
+ <div class=latexeqn name=equ5 size=+1>
+ \mbox{SMR}_b &= &\max_n \left[ \mbox{dB}_{\mbox{\tiny (SPL)}} \
+    \mbox{of amplitude$_n$ in subblock} - \
+    \mbox{dB}_{\mbox{\tiny (SPL)}} \mbox{of mask amplitude$_n$ in \
+    subblock} \right]
+ </div>
+ -->
+ 
+ 
+ 
+ <img src=img-latexeqn/equ7.png  border=0>
+ <!--
+ <div class=latexeqn name=equ7 size=+1>
+    = \max_n \left[ SMR_n \right] 
+ </div>
+ -->
+ 
+ 
+ 
+ <img src=img-latexeqn/equ8.png  border=0>
+ <!--
+ <div class=latexeqn name=equ8 size=+1>
+ R_b = R_{\mbox{\tiny avg}} + \log_2 \left(\frac{x_\mbox{\tiny max$_b$}}{M_b} \
+      \right) - \frac{1}{K} \ \sum_c K_c\ \log_2 \
+                                     \left(\frac{x_\mbox{\tiny max$_c$}}{M_c} \
+      \right)
+ 
+ </div>
+ -->
+ 
+ 
+ <img src=img-latexeqn/equ9.png  border=0>
+ <!--
+ <div class=latexeqn name=equ9 size=+1>
+ R_b = R_{\mbox{\tiny avg}} + \log_2 x_\mbox{\tiny max$_b$}} \
+      - \frac{1}{K} \ \sum_c K_c\ \log_2 x_\mbox{\tiny max$_c$}}\
+      \right)
+ </div>
+ -->
+ 
+ 
+ 
+ 
+ 
+ </center>
+ 
+
+</ul>
+<a name=limitations></a>
+
+<font color=#bb9966><h3><i>LIMITATIONS</i></h3></font>
+<ul>Vaporware: not yet implemented. 
+
+</ul>
+<a name=bugs></a>
+
+<a name=references></a>
+
+<font color=#bb9966><h3><i>REFERENCES</i></h3></font>
+<ul> <p class=hanging>
+
+</ul>
+<a name=download></a>
+
+<font color=#bb9966><h3><i>DOWNLOAD</i></h3></font>
+<ul>
+Compiled versions of the <small><small><i>Mz</i></small></small>FindSilence plugin can
+be downloaded from the <a class=link href=../download>download page</a>.
+</ul>
+<a name=seealso></a>
+
+<a name=SEEALSO></a><font color=#bb9966><h3><i>SEE ALSO</i></h3></font>
+<ul><a href=../MzPowerCurve><small><small><i>Mz</i></small></small>PowerCurve</a> 
+
+</ul>
+<a name=allusions></a>
+
+
+<pre>
+
+
+
+</pre>
+</td></tr>
+</table>
+</center>
+
+</body>
+</html>
+

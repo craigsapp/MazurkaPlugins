@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<title>Mazurka Plugins for Sonic Visualiser</title>
+	{% include head.html %}
+	</head>
+	<body>
+	{% include header.html %}
+	{% if page.pagetitle %}
+		<div class="pagetitle">
+			<h1 class="pagetitle"> {{ page.pagetitle }} </h1>
+		</div>
+	 {% endif %}
+	 <div id="contents">
+		{{ content }}
+	 </div>
+	 {% include footer.html %}
+	 {% include google-analytics.html %}
+	 </body>
+</html>
+<!-- vim: set ts=3 : -->

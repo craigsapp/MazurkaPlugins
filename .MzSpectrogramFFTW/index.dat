@@ -1,0 +1,64 @@
+@BEGIN:	SVPLUGIN
+
+@NAME: MzSpectrogramFFTW
+@APROPOS: Demonstration of how to create spectral data using FFTW from 
+        time data supplied by a host application.
+
+@SUMMARY:  The MzSpectrogramFFTW plugin accepts time-sequence audio
+	data as input from the host application and applies a Fourier 
+	transform to the data generate a spectrum.  The plugin then
+	calculates and outputs the non-negative frequency magnitude 
+	spectrum.
+
+@PARAMETERS:
+
+@OUTPUTS:
+@OUTPUT01: The magnitude spectrogram
+
+@DESCRIPTION:  The MzSpectrogramFFTW plugin produces the same
+output as the <a class=link href=../MzSpectrogramClient>MzSpectrogramClient</a>
+plugin.
+The difference between the two plugins is how the output is produced.
+MzSpectrogramClient calculates with a basic FFT algorithm, while
+MzSpectrogramFFTW calculates with a sophisticated FFT algorithm
+which is 3 to 4 times faster.
+So in the long run, you will save lots of time using the FFTW transforms
+rather than a basic FFT algorithm (although it will take <i>a lot</i>
+more time to get things compiled the first time using FFTW).
+
+<p> MzSpectogramFFT is a useful template for how to write your
+own frequency analysis plugin where more control over the transform
+process is necessary, or you want to implement a transform other than
+a Discrete Fourier Transform, such as a wavelet transform.  
+Also, the analysis window applied to the audio signal in MzSpectrogramHost
+is controlled by the host (usually selected by the user, or set to a
+default type).  If your plugin needs a specific analysis window which
+cannot be supplied by the host, then you should use a client-based
+transform as given in this example plugin.
+
+
+@SEEALSO: 
+
+In order of complexity:
+<ol>
+   <li> <a class=link href=../MzSpectrogramHost>MzSpectrogramHost</a> -- 
+	demonstrates how to receive and process spectral data from 
+        the host application.
+   <li> <a class=link href=../MzSpectrogramHost>MzSpectrogramClient</a> --
+        demonstrates how to generate and process spectral data generated
+        from time data provided by the host application.
+   <li> MzSpectrogramFFTW -- described on this page: demonstrates how
+        to do three-to-four times faster Fourier transforms than MzSpectrgramClient.
+   <li> <a class=link href=../MzNevermore>MzNevermore</a> -- a full-featured
+        Spectrogram display function based on MzSpectrgramFFTW.
+</ol>
+
+@LIMITATIONS: 
+
+@BUGS: 
+
+@BEGIN:	REFERENCES
+@REFERENCE:
+@END:	REFERENCES
+
+@END:	SVPLUGIN

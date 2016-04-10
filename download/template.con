@@ -1,0 +1,147 @@
+<!---------------------------------------------------------------------------->
+<html>
+<head>
+<title> SV Mazurka Plugin Download Page</title>
+<meta name="Document-Owner" content="Craig Sapp (craig@ccrma.stanford.edu)"> 
+<meta name="Author" content="Craig Stuart Sapp (craig@ccrma.stanford.edu)">
+<meta name="Creation-Date" content=" Sat May 27 01:45:26 PDT 2006 ">
+<meta name="Revision-Date" content=" Sat May 27 01:45:35 PDT 2006 ">
+<style type="text/css">
+<!-- 
+.pluginname { font-weight: bold;
+            text-decoration: none; 
+            font-size: 125%;
+            color: #116611}
+
+.plugintitlesv { font-weight: bold;
+            text-decoration: none; 
+            font-size: 200%;
+            color: #2faa15}
+
+.mydd dd {
+	margin-left: 0;
+	margin-bottom: 0.25em;}
+
+
+.plugintitlemz { font-weight: bold;
+            text-decoration: none; 
+            font-style: italic;
+            font-size: 150%;
+            color: #d61b1a}
+
+.link {  text-decoration: none;  }
+
+.plugin {  text-decoration: none;  
+	 color: #d70f10;
+	font-weight: bold;
+     }
+
+.pluginsmall {  text-decoration: none;  
+	 color: #d70f10;
+	font-style: italic;
+     }
+
+
+.function {  text-decoration: none; 
+             font-style: italic; }
+
+.indexitem { text-decoration: none; }
+            
+-->
+</style>
+</head>
+</head>
+
+
+<body bgcolor=#ffffff alink=#339933 link=#339933 vlink=#339933 text=#220000>
+<!-- header *************************************************** -->
+
+<center>
+<table width=760 cellpadding=0 cellspacing=0 border=0>
+<tr valign=top>
+<td>
+   <a href=http://www.charm.rhul.ac.uk><img alt="" border=0 src=../images/logo.gif></a>
+</td>
+<td>
+   <a href=http://mazurka.org.uk><img alt="" border=0 src=../images/banner.gif></a>
+</td>
+</tr>
+</table>
+<center>
+
+
+<!-- ------------------------------------------------------------- -->
+
+
+<center>
+<table width=600>
+<tr><td>
+
+<center>
+<table width=731 cellspacing=0 cellpadding=0>
+<tr width=747 height=78 valign=bottom><td width=247><a href=http://sv.mazurka.org.uk><img src=../img/svmazurkaplugins-withline.png alt="SV Mazurka Plugins:" border=0></a></td>
+<td width=500 height=90><table cellpadding=0 cellspacing=0 width=500 height=90><tr height=73><td valign=bottom><center><span class=plugintitlesv>Downloads (vamp 1.0)</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</center></td></tr>
+<tr height=5><td></td></tr>
+<tr height=12><td><img src=../img/svpluginline.png alt="" border=0></td></tr></table>
+</td></tr></table>
+</center>
+<p>
+
+Goto: [
+   <a class=link href=#windows>Windows</a> |
+   <a class=link href=#linux>Linux</a> |
+   <a class=link href=#osxppc>OSX-PPC</a>
+]
+<pre>
+
+</pre>
+<p>
+
+<p>
+Click on the red <i>dynamic library</i> entries to download a 
+compiled plugin for a specific operating system.  Click on the green
+<i>plugin name</i> to view the documentation for the plugin.
+<p>
+<font color=red>Warning:</font> Delete any vamp 0.9 plugins from
+the "Vamp Plugins" directory before running Sonic Visualiser 1.0, or SV
+will not startup.  Historic vamp 0.9 compliant plugins can be found 
+on <a href=index-0.9.html>this page</a>.
+
+
+<p>
+
+<a name=windows> </a>
+<font color=#bb9966><h3><i>Windows</i><hr noshade color=#bb9966></h3></font>
+<ul>
+<<CONTENTS=windows>>
+</ul>
+<pre>
+
+</pre>
+<a name=linux> </a>
+<font color=#bb9966><h3><i>Linux</i><hr noshade color=#bb9966></h3></font>
+<ul>
+<<CONTENTS=linux>>
+</ul>
+<pre>
+
+
+
+</pre>
+<a name=osxppc> </a>
+<font color=#bb9966><h3><i>OSX-PPC</i><hr noshade color=#bb9966></h3></font>
+<ul>
+<<CONTENTS=osxppc>>
+</ul>
+
+
+
+
+</pre>
+</td></tr>
+</table>
+</center>
+
+</body>
+</html>
+

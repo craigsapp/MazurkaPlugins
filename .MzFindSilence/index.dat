@@ -1,0 +1,99 @@
+@BEGIN:	SVPLUGIN
+
+@NAME: MzFindSilence
+@APROPOS: Marks regions of silence in an audio file.
+
+@PARAMETERS:
+
+@OUTPUTS:
+@OUTPUT01: Markers for the start and stop of each region of silence in the
+   	audio.  The marker identifying the start of a silence region
+	will display the duration of the silence in seconds.  The 
+	marker at the end of a silence region will not be labeled.
+@OUTPUT02: Always Contains only two markers: (1) the start of the audio
+	data after any initial silence. (2) the end of the audio data
+        before any final silence.
+
+@INPUTS: Currently will only measure the power of the first audio channel.
+	If a stereo files is input, the right channel will be ignored.
+
+@DESCRIPTION:  The description of the plugin goes here.
+
+<center>
+
+
+
+<div class=latexeqn name=equ1 size=+1>
+R_b^{\mbox{\tiny opt}} = \frac{P}{K_p} + \frac{\log_2(10)}{20}   \
+   \left[ \mbox{SMR}_b - \frac{1}{K_p}  \sum_{R_c \ne 0}  K_c \  \
+   \mbox{SMR}_c \right]
+</div>
+
+<br>
+<br>
+<div class=latexeqn name=equ2 size=+1>
+R_b^{\mbox{\tiny opt}} = R_{\mbox{\tiny avg}} + \
+   \frac{\log_2(10)}{20} \left[ \mbox{SMR}_b - \frac{1}{K}  \
+   \sum_{c}  K_c \  \mbox{SMR}_c \right]
+</div>
+
+<br>
+<br>
+<div class=latexeqn name=equ3 size=+1>
+\mbox{SMR}_b = 20 \left( \log_{10} \left|x_\mbox{{\tiny max}$_b$}} \
+    \right| - log_{10} \ M_b \right)
+</div>
+
+<br>
+<br>
+<div class=latexeqn name=equ4 size=+1>
+\mbox{SMR}_b = \mbox{dB}_{\mbox{\tiny (SPL)}} \mbox{of max amplitude \
+   in subblock} \ - \ \mbox{dB}_{\mbox{\tiny (SPL)}} \mbox{of mask \
+   amplitude for subblock}
+</div>
+
+<br>
+<br>
+<div class=latexeqn name=equ5 size=+1>
+\mbox{SMR}_b &= &\max_n \left[ \mbox{dB}_{\mbox{\tiny (SPL)}} \
+   \mbox{of amplitude$_n$ in subblock} - \
+   \mbox{dB}_{\mbox{\tiny (SPL)}} \mbox{of mask amplitude$_n$ in \
+   subblock} \right]
+</div>
+
+
+<div class=latexeqn name=equ7 size=+1>
+   = \max_n \left[ SMR_n \right] 
+</div>
+
+
+<div class=latexeqn name=equ8 size=+1>
+R_b = R_{\mbox{\tiny avg}} + \log_2 \left(\frac{x_\mbox{\tiny max$_b$}}{M_b} \
+     \right) - \frac{1}{K} \ \sum_c K_c\ \log_2 \
+                                    \left(\frac{x_\mbox{\tiny max$_c$}}{M_c} \
+     \right)
+
+</div>
+
+<div class=latexeqn name=equ9 size=+1>
+R_b = R_{\mbox{\tiny avg}} + \log_2 x_\mbox{\tiny max$_b$}} \
+     - \frac{1}{K} \ \sum_c K_c\ \log_2 x_\mbox{\tiny max$_c$}}\
+     \right)
+</div>
+
+
+
+
+</center>
+
+@SEEALSO: <a href=../MzPowerCurve>MzPowerCurve</a>
+
+@LIMITATIONS:  Vaporware: not yet implemented.
+
+@BUGS: 
+
+@BEGIN:	REFERENCES
+@REFERENCE:
+@END:	REFERENCES
+
+@END:	SVPLUGIN

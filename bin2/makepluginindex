@@ -1,0 +1,897 @@
+#!/usr/bin/perl
+#
+# Programmer:    Craig Stuart Sapp <craig@ccrma.stanford.edu>
+# Creation Date: Sun May  7 05:38:55 PDT 2006
+# Last Modified: Sun May  7 05:38:58 PDT 2006
+# Filename:      ...mazurka/website/software/sv/plugin/bin/maketestindex
+# Syntax:        perl 5
+#
+# Description:
+#
+
+use strict;
+
+my $template   = $ARGV[0];
+my $workingdir = $ARGV[1];
+my $h3color    = "#bb9966";    # color of manpage section headings
+my $syncolor   = "#aaaaaa";    # color of non-typed synopsis characters
+my $binasc     = "/usr/ccarh/bin/binasc";
+my $sigdir     = "/project/mazurka/website/software/sv/plugin";
+my $binaddr    = "http://extras.humdrum.org/bin";
+my $PLUGINNAME = "";
+my $bindir     = "/project/mazurka/website/software/sv/plugin/bin";
+
+my $maxtextlen = 30; # maximum textarea file contents line count before wrapping
+
+open (TFILE, $template) || die;
+my @template = <TFILE>;
+close TFILE;
+
+my $testindex;
+
+my @testlist = getInputList($workingdir);
+@testlist = sort @testlist;
+
+my $mancontents = getManContents($workingdir);
+
+$workingdir =~ s/\/$//;
+$workingdir =~ /([^\/]+)$/;
+$workingdir =~ s/,//g;
+$workingdir =~ s/\s//g;
+my $pluginname = $1;
+
+$pluginname = $PLUGINNAME;
+chomp $pluginname;
+$pluginname =~ s/\s+//g;
+my $pluginnamexmz = $pluginname;
+$pluginnamexmz =~ s/^Mz//;
+
+my $i;
+for ($i=0; $i<@template; $i++) {
+   $template[$i] =~ s/<<pluginnamexmz>>/$pluginnamexmz/g;
+   $template[$i] =~ s/<<pluginname>>/$pluginname/g;
+   $template[$i] =~ s/<<contents>>/$mancontents/;
+}
+   
+
+   
+# print final output
+
+
+open (IFILE, ">$workingdir/index.html") || die;
+for ($i=0; $i<@template; $i++) {
+   print IFILE $template[$i];
+}
+close IFILE;
+
+exit(0);
+
+
+##########################################################################
+
+
+##############################
+##
+## includeFile --
+##
+
+sub includeFile {
+   my ($line) = @_;
+
+   $line =~ /<<file=([^>]+)>>/;
+   my $filename = $1;
+   if ($filename =~ /^\s*$/) {
+      return $line;
+   }
+
+   if (!-r "$workingdir/$filename") {
+      return $line;
+   }
+
+   my $contents = `cat $workingdir/$filename`;
+
+   $line =~ s/<<file=[^>]+>>/$contents/;
+
+   return $line;
+}
+
+
+
+##############################
+##
+## getInputList --
+##
+
+sub getInputList {
+   my ($workingdir) = @_;
+   my @output;
+   opendir(WDIR, $workingdir);
+   my $file;
+   while ($file = readdir(WDIR)) {
+      next if $file =~ /^\./;
+      next if -d "$workingdir/$file";
+      next if !-r "$workingdir/$file";
+      next if $file !~ /$pluginname-\d+\.in/;
+      $output[@output] = $file;
+   }
+   closedir WDIR;
+   return @output;
+}
+
+
+
+##############################
+##
+## getManContents --
+##
+
+sub getManContents {
+   my ($workingdir) = @_;
+
+   my $output = "";
+   my %mandata = getManData("$workingdir/index.dat");
+   $PLUGINNAME = $mandata{'NAME'};
+   chomp $PLUGINNAME;
+   $PLUGINNAME =~ s/\s*//;
+
+   $mandata{'MZNAME'} = $mandata{'NAME'};
+   if ($mandata{'MZNAME'} =~ /^Mz/) {
+      $mandata{'MZNAME'} =~ s/^Mz/<small><small><i>Mz<\/i><\/small><\/small>/;
+   }
+
+   $mandata{'SUMMARY'} =~ s/^Mz/ <small><small><i>Mz<\/i><\/small><\/small>/g;
+   $mandata{'SUMMARY'} =~ s/\sMz/ <small><small><i>Mz<\/i><\/small><\/small>/g;
+   $mandata{'SEEALSO'} =~ s/^Mz/ <small><small><i>Mz<\/i><\/small><\/small>/g;
+   $mandata{'SEEALSO'} =~ s/>Mz/><small><small><i>Mz<\/i><\/small><\/small>/g;
+   $mandata{'SEEALSO'} =~ s/\sMz/ <small><small><i>Mz<\/i><\/small><\/small>/g;
+   $mandata{'DESCRIPTION'} =~ s/>Mz/><small><small><i>Mz<\/i><\/small><\/small>/g;
+   $mandata{'DESCRIPTION'} =~ s/\sMz/ <small><small><i>Mz<\/i><\/small><\/small>/g;
+   $mandata{'DESCRIPTION'} =~ s/^Mz/ <small><small><i>Mz<\/i><\/small><\/small>/g;
+
+   # my $key;
+   # $output = "<pre>";
+   # foreach $key (keys %mandata) {
+   # $output .= "   $key         ==  $mandata{$key}\n";
+   # }
+   # $output .= "<\pre>";
+   # return $output;
+
+   my $base;
+   my $file;
+   my $number;
+   my $testtitle;
+   my $xtesttitle;
+   my $command;
+   my $inwidth;
+   my $outwidth;
+   my @incontents;
+   my @outcontents;
+   my $count;
+   my $string;
+
+
+   $output .= "\n<font color=$h3color><h3><i>SYNOPSIS</i></h3></font>";
+   $output .= "\n<ul><b>$mandata{'MZNAME'}</b> -- $mandata{'APROPOS'}</ul>";
+
+   if ($mandata{'SUMMARY'} !~ /^\s*$/) {
+      $output .= "\n<ul>\n";
+      $output .= "$mandata{'SUMMARY'}\n</ul>\n";
+   }
+
+   $output .= "\n<a name=options></a>\n";
+   if ($mandata{'OPTIONNAME01'} !~ /^\s*$/) {
+      $output .= "<font color=$h3color><h3><i>OPTIONS</i></h3></font>";      
+      $output .= "<ul>";
+      my $optioncount = countOptions(%mandata);
+      $output .= "<table>";
+      my $c;
+      for ($c=0; $c<$optioncount; $c++) {
+         $count = $c + 1;
+         $count = "0$count" if $count < 10;
+         $output .= "\n<tr valign=baseline><td>";
+         $string = parseCommandStyle($mandata{"OPTIONNAME$count"});
+         $output .= "<tt>$string</tt></td><td width=10></td>";
+         $string = $mandata{"OPTIONINFO$count"};
+         $output .= "\n<td>$string";
+         $output .= "\n</td></tr>";
+      }
+      $output .= "</table>";
+      $output .= "</ul>";
+   }
+
+   ##### INPUT PARAMETERS #####
+
+   my $pcount = getParameterCount(%mandata);
+
+   if ($pcount > 0) {
+      if (-r "$workingdir/img/$mandata{'NAME'}-parameters.png") {
+         $output .= "<img vspace=10 hspace=10 src=img/$mandata{'NAME'}-parameters.png border=0 align=right>\n";
+      } 
+      $output .= "\n<font color=$h3color><h3><i>INPUT PARAMETERS</i>";
+      $output .= "</h3></font>";
+
+      $output .= "\n<ul>";
+
+      $output .= "$mandata{'MZNAME'} accepts $pcount input parameter";
+      $output .= "s" if $pcount > 1;
+      $output .= ":<p>";
+      $output .= "\n<dl class=mydd>";
+
+      my $ii;
+      my $iformat;
+      my $title;
+      my $rest;
+
+      for ($ii=1; $ii<=$pcount; $ii++) {
+         $iformat = $ii;
+         $iformat = "0$iformat" if $iformat < 10;
+         ($title, $rest) = splitParameterInfo($mandata{"PARAMETER$iformat"});
+         $output .= "\n<dt>"; 
+         $output .= "$ii. <i><b><font color=$h3color>$title</font></b></i>";
+         $output .= "\n<dd>"; 
+         $output .= "<ul><span class=noindent>$rest</span></ul>";
+         $output .= "\n";
+      }
+
+      $output .= "\n</dl>";
+      $output .= "\n</ul>";
+   }
+
+   my $outcount = getOutputCount(%mandata);
+
+   if ($outcount > 0) {
+      $output .= "\n<font color=$h3color><h3><i>OUTPUTS</i>";
+      $output .= "</h3></font>";
+
+      $output .= "\n<ul>";
+
+      $output .= "$mandata{'MZNAME'} generates $outcount output";
+      $output .= "s" if $outcount > 1;
+      $output .= ":<p>";
+      $output .= "\n<dl class=mydd>";
+
+      my $ii;
+      my $iformat;
+      my $title;
+      my $rest;
+
+      for ($ii=1; $ii<=$outcount; $ii++) {
+         $iformat = $ii;
+         $iformat = "0$iformat" if $iformat < 10;
+         ($title, $rest) = splitParameterInfo($mandata{"OUTPUT$iformat"});
+         $output .= "\n<dt>"; 
+         $output .= "$ii. <i><b><font color=$h3color>$title</font></b></i>";
+         $output .= "\n<dd>"; 
+         $output .= "<ul><span class=noindent>$rest</span></ul>";
+         $output .= "\n";
+      }
+
+      $output .= "\n</dl>";
+      $output .= "\n</ul>";
+   }
+
+
+
+   ##### DESCRIPTION #####
+
+   $output .= "\n<a name=description></a>\n";
+   if ($mandata{'DESCRIPTION'} !~ /^\s*$/) {
+      $output .= "\n<font color=$h3color><h3><i>DESCRIPTION</i></h3></font>";
+      $output .= "\n<ul>";
+      $output .= "$mandata{'DESCRIPTION'}";
+      $output .= "\n</ul>";
+   }
+
+   $output .= "\n<a name=limitations></a>\n";
+   if ($mandata{'LIMITATIONS'} !~ /^\s*$/) {
+      $output .= "\n<font color=$h3color><h3><i>LIMITATIONS</i></h3></font>";
+      $output .= "\n<ul>";
+      $output .= "$mandata{'LIMITATIONS'}";
+      $output .= "\n</ul>";
+   }
+
+   $output .= "\n<a name=bugs></a>\n";
+   if ($mandata{'BUGS'} !~ /^\s*$/) {
+      $output .= "\n<font color=$h3color><h3><i>BUGS</i></h3></font>";      
+      $output .= "\n<ul>";
+      $output .= "$mandata{'BUGS'}";
+      $output .= "\n</ul>";
+   }
+
+   $output .= "\n<a name=references></a>\n";
+   if ($mandata{'REFERENCES'} !~ /^\s*$/) {
+      $output .= "\n<font color=$h3color><h3><i>REFERENCES</i></h3></font>";
+      $output .= "\n<ul>";
+      $output .= "$mandata{'REFERENCES'}";
+      $output .= "\n</ul>";
+   }
+
+   # DOWNLOAD 
+   $output .= "\n<a name=download></a>\n";
+   $output .= "\n<font color=$h3color><h3><i>DOWNLOAD</i></h3></font>";      
+   $output .= "\n<ul>";
+   $output .= "\nCompiled versions of the $mandata{'MZNAME'} plugin can";
+   $output .= "\nbe downloaded from the <a class=link href=../download>download page</a>.";
+
+   my $date;
+
+   if (-r "$workingdir/../../bin/linux-static/$mandata{'MZNAME'}") {
+      $output .= "<li> <a class=link href=$binaddr/linux-static/$mandata{'MZNAME'}>Linux</a> (i386 processors)\n";
+      $date = getCompileDate("$workingdir/../../bin/linux-static/$mandata{'MZNAME'}");
+      $output .= " compiled on $date.";
+   }
+
+   if (-r "$workingdir/../../bin/osx/$mandata{'MZNAME'}") {
+      $output .= "<li> <a class=link href=$binaddr/osx/$mandata{'MZNAME'}>Mac OSX</a> (version 10.2 and higher)\n";
+      $date = getCompileDate("$workingdir/../../bin/osx/$mandata{'MZNAME'}");
+      $output .= " compiled on $date.";
+   }
+
+   if (-r "$workingdir/../../bin/cygwin/$mandata{'MZNAME'}.exe") {
+      $output .= "<li> <a class=link href=$binaddr/cygwin/$mandata{'MZNAME'}.exe>Cygwin</a>";
+      $output .= " (a Linux terminal emulator for Windows available at <a class=link href=http://www.cygwin.com>www.cygwin.com</a>)\n";
+      $date = getCompileDate("$workingdir/../../bin/cygwin/$mandata{'MZNAME'}.exe");
+      $output .= " compiled on $date.";
+   }
+
+   if (-r "$workingdir/../../bin/windows/$mandata{'MZNAME'}.exe") {
+      $output .= "<li> <a class=link href=$binaddr/windows/$mandata{'MZNAME'}.exe>Windows</a>";
+      $date = getCompileDate("$workingdir/../../bin/windows/$mandata{'MZNAME'}.exe");
+      $output .= " compiled on $date.";
+   }
+
+   $date = getProgramDate("$sigdir/$mandata{'NAME'}/src/$mandata{'NAME'}.cpp");
+
+if ($date !~ /never/i) {
+
+   $output .= "<p> The source code for the plugin was last modified on $date.";
+   $output .= "<ul>";
+
+   makePDFFiles($mandata{'NAME'});
+
+   $output .= "<li>";
+   if (-r "$sigdir/$mandata{'NAME'}/src/$mandata{'NAME'}.h") {
+      $output .= "<i>Header:</i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ ";
+      if (-r "$sigdir/$mandata{'NAME'}/src/$mandata{'NAME'}.h.html") {
+         $output .= "<a class=link href=src/$mandata{'NAME'}.h.html>html</a> | ";
+      }
+      if (-r "$sigdir/$mandata{'NAME'}/src/$mandata{'NAME'}.h.pdf") {
+         $output .= "<a class=link href=src/$mandata{'NAME'}.h.pdf>PDF</a> | ";
+      }
+      if (-r "$sigdir/$mandata{'NAME'}/src/$mandata{'NAME'}.h") {
+         $output .= "<a class=link href=src/$mandata{'NAME'}.h>text</a> ] ";
+      }
+   }
+
+   $output .= "<li>";
+   if (-r "$sigdir/$mandata{'NAME'}/src/$mandata{'NAME'}.cpp") {
+      $output .= "<i>Source Code:</i> [ ";
+      if (-r "$sigdir/$mandata{'NAME'}/src/$mandata{'NAME'}.cpp.html") {
+         $output .= "<a class=link href=src/$mandata{'NAME'}.cpp.html>html</a> | ";
+      }
+      if (-r "$sigdir/$mandata{'NAME'}/src/$mandata{'NAME'}.cpp.pdf") {
+         $output .= "<a class=link href=src/$mandata{'NAME'}.cpp.pdf>PDF</a> | ";
+      }
+      if (-r "$sigdir/$mandata{'NAME'}/src/$mandata{'NAME'}.cpp") {
+         $output .= "<a class=link href=src/$mandata{'NAME'}.cpp>text</a> ] ";
+      }
+   }
+
+   $output .= "</ul>";
+
+} # Never  if statment
+
+   $output .= "\n</ul>";
+
+   $output .= "\n<a name=seealso></a>\n";
+   if ($mandata{'SEEALSO'} !~ /^\s*$/) {
+      $output .= "\n<a name=SEEALSO></a><font color=$h3color><h3><i>SEE ALSO</i></h3></font>";      
+      $output .= "\n<ul>";
+      $output .= "$mandata{'SEEALSO'}";
+      $output .= "\n</ul>";
+   }
+   
+
+   $output .= "\n<a name=allusions></a>\n";
+   if ($mandata{'ALLUSIONS'} !~ /^\s*$/) {
+      $output .= "\n<a name=ALLUSIONS></a><font color=$h3color><h3><i>ALLUSIONS</i></h3></font>";      
+      $output .= "\n<ul>";
+      $output .= "$mandata{'ALLUSIONS'}";
+      $output .= "\n</ul>";
+   }
+   
+
+   return $output;
+}
+
+
+
+##############################
+##
+## splitParameterInfo --
+##
+
+sub splitParameterInfo {
+   my ($string) = @_;
+
+   $string =~ /^\s*([^:]+)\s*:\s*(.*)/s;
+   return ($1, $2); 
+}
+
+
+
+##############################
+##
+## getOutputCount -- counter the number of outputs parameters.
+##
+
+sub getOutputCount {
+   my %mandata = @_;
+
+   my $counter = 0;
+   my $notfound = 0;
+   while ($notfound == 0) {
+      $counter++;
+      $counter = int($counter);
+      $counter = "0$counter" if $counter < 10;
+      $notfound = 1 if $mandata{"OUTPUT$counter"} =~ /^\s*$/;
+   }
+   
+   return $counter - 1;
+}
+
+
+
+##############################
+##
+## getParameterCount -- counter the number of input parameters.
+##
+
+sub getParameterCount {
+   my %mandata = @_;
+
+   my $counter = 0;
+   my $notfound = 0;
+   while ($notfound == 0) {
+      $counter++;
+      $counter = int($counter);
+      $counter = "0$counter" if $counter < 10;
+      $notfound = 1 if $mandata{"PARAMETER$counter"} =~ /^\s*$/;
+   }
+   
+   return $counter - 1;
+}
+
+
+
+
+##############################
+##
+## makePDFFiles --
+##
+
+sub makePDFFiles {
+   my ($name) = @_;
+
+   if (-r "$sigdir/$name/src/$name.cpp") {
+      `(cd $sigdir/$name/src; enscript -G2r -o $name.cpp.ps $name.cpp)`;
+      `(cd $sigdir/$name/src; ps2pdf $name.cpp.ps $name.cpp.pdf)`;
+      `(cd $sigdir/$name/src; rm -f $name.cpp.ps)`;
+   }
+
+   if (-r "$sigdir/$name/src/$name.h") {
+      `(cd $sigdir/$name/src; enscript -G2r -o $name.h.ps $name.h)`;
+      `(cd $sigdir/$name/src; ps2pdf $name.h.ps $name.h.pdf)`;
+      `(cd $sigdir/$name/src; rm -f $name.h.ps)`;
+   }
+
+}
+
+
+##############################
+##
+##  parseCommandStyle --
+##
+
+sub parseCommandStyle {
+   my ($string) = @_;
+
+   $string =~ s/\binput\b/<font\@color=red><i>input<\/i><\/font>/g;
+   $string =~ s/\boutput\b/<font\@color=red><i>output<\/i><\/font>/g;
+   $string =~ s/ ([a-zA-Z0-9][a-zA-Z0-9-]*)/ <small><i>$1<\/i><\/small>/g;
+   $string =~ s/\|/<font color=$syncolor>|<\/font>/g;
+   $string =~ s/\[/<font color=$syncolor>[<\/font>/g;
+   $string =~ s/\]/<font color=$syncolor>]<\/font>/g;
+   $string =~ s/\@/ /g;
+   $string =~ s/^\s+//;
+   $string =~ s/\s+$//;
+   $string =~ s/\s+/ /;
+   $string =~ s/ /\&nbsp;/g;
+
+   return $string;
+}
+
+
+
+##############################
+##
+## countOptions --
+##
+
+sub countOptions {
+   my %mandata = @_;
+   my $counter = 1;
+
+   $counter = int($counter);
+   $counter = "0$counter" if $counter < 10;
+   while ($mandata{"OPTIONNAME$counter"} !~ /^\s*$/) {
+      $counter++;
+      $counter = int($counter);
+      $counter = "0$counter" if $counter < 10;
+   }
+
+   return $counter-1;
+}
+
+
+##############################
+##
+## getTestInfo --
+##
+
+sub getTestInfo {
+   my ($file) = @_;
+   my $testtitle = "No description available for this test.";
+   my $command = "No command available for this test.";
+   my $maxwidth = "5";
+   my $width;
+   my @contents;
+
+   my @tempcontents;
+   open (XFILE, $file) || die;
+   @tempcontents = <XFILE>;
+   close XFILE;
+
+   my $i;
+   for ($i=0; $i<@tempcontents; $i++) {
+      if ($tempcontents[$i] =~ /^\!\!\!test:\s+(.*)\s*$/) {
+         $testtitle = $1;
+         next;
+      }
+      if ($tempcontents[$i] =~ /^\!\!\!command:\s+(.*)\s*$/) {
+         $command = $1;
+         $command =~ s/\%in/<font color=red><i>input-file<\/i><\/font>/g;
+         $command =~ s/\%out/<font color=red><i>output-file<\/i><\/font>/g;
+         next;
+      }
+      $width = length($tempcontents[$i]);
+      $maxwidth = $width if $width > $maxwidth;
+      $contents[@contents] = $tempcontents[$i];
+   }
+
+   $maxwidth = 50 if $maxwidth > 50;
+
+   return ($testtitle, $command, $maxwidth, @contents);
+}
+
+
+
+##############################
+##
+## displayFileContents --
+##
+
+sub displayFileContents {
+   my ($width, $title, @contents) = @_;
+   my $output;
+
+   my $filelength = @contents;
+   $filelength = $maxtextlen if $filelength > $maxtextlen;
+
+   $output .= "\n<center>";
+   $output .= "\n$title<br>";
+   $output .= "\n<textarea rows=$filelength cols=$width>";
+   my $i;
+   for ($i=0; $i<@contents; $i++) {
+      $output .= $contents[$i];
+   }
+   $output .= "</textarea>";
+
+   return $output;
+}
+
+
+
+##############################
+##
+## checkForLatexEquations --
+##
+
+sub checkForLatexEquations {
+   my ($filename) = @_;
+
+   my $latexeqnstatus = `grep latexeqn $filename`;
+   if ($latexeqnstatus =~ /^\s*$/) {
+      return $filename;
+   }
+
+   my $directory = ".";
+   my $filebase  = "";
+   if ($filename =~ /(.*)\/([^\/]+)$/) {
+      $directory = $1;
+      $filebase  = $2;
+   } else {
+      $filebase = $filename;
+   }
+
+   if (!-d "$directory/img-latexeqn") {
+      mkdir("$directory/img-latexeqn", 0755) or 
+         die "Cannot create $directory/img-latexeqn";
+   }
+
+   `(cd $directory; $bindir/latexeqn index.dat > img-latexeqn/index.dat)`;
+
+   my $newfilename = "$directory/img-latexeqn/$filebase";
+   return $newfilename;
+}
+
+
+##############################
+##
+## getManData --
+##
+
+sub getManData {
+   my ($datafile) = @_;
+   $datafile =~ s/\s//g;
+   $datafile =~ s/,//g;
+   my %output;
+
+   $datafile = checkForLatexEquations($datafile);
+
+   my $key = "";
+   my $newkey = "";
+   my $value = "";
+   my $newvalue = "";
+   my $line;
+   my $counter = 1;
+   my $counter2 = 1;
+
+   my $references = "";
+   my $reftoggle = 0;
+
+
+   if (!open (DFILE, "$datafile")) {
+      print "Cannot open $datafile\n";
+      `echo "Cannot open $datafile" > /tmp/aaaaaa`;
+      die;
+   }
+   while ($line = <DFILE>) {
+      if ($line =~ /BEGIN:\s*REFERENCES/) {
+         $reftoggle = 1;
+         next;
+      } elsif ($line =~ /END:\s*REFERENCES/) {
+         $reftoggle = 0;
+         next;
+      }
+      if ($reftoggle) {
+         $references .= " $line";
+      }
+
+      if ($line =~ /^\@([^:]+):\s*(.*)/) {
+         $newkey = $1;
+         $newvalue = $2;
+         if ($newvalue =~ /<<file=.*>>/) {
+            $newvalue = includeFile($newvalue);
+         }
+         if ($key eq "OPTIONNAME") {
+            $counter = int($counter);
+            $counter = "0$counter" if $counter < 10;
+            $key = "OPTIONNAME$counter";
+            $counter++;
+         }
+
+         if ($key eq "OPTIONINFO") {
+            $counter2 = int($counter2);
+            $counter2 = "0$counter2" if $counter2 < 10;
+            $key = "OPTIONINFO$counter2";
+            $counter2++;
+         }
+
+         if ($key !~ /^\s*$/) {
+            $output{$key} = $value;
+         }
+         $key = $newkey;
+         $value = $newvalue;
+
+      } else {
+         if ($line =~ /<<file=.*>>/) {
+            $line = includeFile($line);
+         }
+         $value .= " $line";
+      }
+   }
+   close DFILE;
+
+   if ($references !~ /^\s*$/s) {
+      $references =~ s/\@REFERENCE:/<p class=hanging>/sgi;
+      $output{'REFERENCES'} = $references;
+   }
+
+   return %output;
+}
+
+
+
+##############################
+##
+## getCompileDate --
+##
+
+sub getCompileDate {
+   my ($file) = @_;
+   my $output = "";
+   my $finfo;
+
+   my $day;
+   my $month;
+   my $year;
+
+   my $data = `$binasc -a $file | grep -B 1 -C 1 compiled:`;
+   if ($data =~ /compiled:\s*([^ \t\n]+)\s+([^ \t\n]+)\s+(\d\d\d\d)/) {
+      $output = "$2 $1 $3";
+   } elsif ($data =~ /([^ \t\n]+)\s+([^ \t\n]+)\s+(\d\d\d\d)\s*compiled:/) {
+      # date was stored backwards from compiled: marker
+      $output = "$2 $1 $3";
+   } else {
+      # date there was not date found, so used file creation date
+      $finfo = `stat -L $file`;
+      if ($finfo =~ /Modify:\s+(\d\d\d\d)-(\d\d)-(\d\d)/) {
+         # Change: 2004-11-10 23:30:08.000000000 -0800
+         $day   = $3;
+         $month = $2;
+         $year  = $1;
+         $day = int($day);
+         $month = getMonth($month);
+         $output = "$day $month $year";
+      } else {
+
+         $output = "xxxx";
+      }
+      
+   }
+
+   return $output;
+
+}
+
+
+
+##############################
+##
+## getMonth -- return the Month name for a given month number
+##
+
+sub getMonth {
+   my ($num) = @_;
+   return "Jan" if $num == 1;
+   return "Feb" if $num == 2;
+   return "Mar" if $num == 3;
+   return "Apr" if $num == 4;
+   return "May" if $num == 5;
+   return "Jun" if $num == 6;
+   return "Jul" if $num == 7;
+   return "Aug" if $num == 8;
+   return "Sep" if $num == 9;
+   return "Oct" if $num == 10;
+   return "Nov" if $num == 11;
+   return "Dec" if $num == 12;
+   return $num;
+}
+
+
+
+ 
+##############################
+##
+## getProgramDate --
+##
+
+sub getProgramDate {
+   my ($file) = @_;
+
+   my $output = "";
+   if (!open (PFILE, $file)) {
+      return "<i>never</i>";
+   } 
+   my @contents = <PFILE>;
+   my $date;
+
+   # search the header for the most recent time stamp
+   my $i = 0;
+   while ($contents[$i] =~ /^\/\//) {
+
+      if ($contents[$i] =~ /Last Modified:\s*([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+(\d\d\d\d)/) {
+         $date = "$3 $2 $6";
+         $output = findEarliestDate($output, $date);
+      } elsif ($contents[$i] =~ /Last Modified:\s*([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+(\d\d\d\d)/) {
+         $date = "$3 $2 $5";
+         $output = findEarliestDate($output, $date);
+      }
+
+      $i++;
+   }
+   close PFILE;
+
+   return $output;
+}
+
+
+
+
+##############################
+##
+## findEarliestDate --
+##
+
+sub findEarliestDate {
+   my ($date1, $date2) = @_;
+
+   my $year1;
+   my $year2;
+   my $month1;
+   my $month2;
+   my $day1;
+   my $day2;
+
+   $date1 =~ /([^ ]+)\s+([^ ]+)\s+([^ ]+)/;
+   $day1   = $1;
+   $month1 = $2;
+   $year1  = $3;
+   $date2 =~ /([^ ]+)\s+([^ ]+)\s+([^ ]+)/;
+   $day2   = $1;
+   $month2 = $2;
+   $year2  = $3;
+
+   return $date2 if $year1 == 0;
+   return $date1 if $year2 == 0;
+   return $date2 if $year2 > $year1;
+   return $date1 if $year1 > $year2;
+
+   $month1 = getMonthNumber($month1);
+   $month2 = getMonthNumber($month2);
+
+   return $date2 if $month2 > $month1;
+   return $date1 if $month1 > $month2;
+
+   return $date2 if $day2 > $day1;
+   return $date1 if $day1 > $day2;
+
+   # they are the same date so it does not matter:
+   return $date1;
+}
+
+
+
+##############################
+##
+## getMonthNumber --
+##
+
+sub getMonthNumber {
+   my ($month) = @_;   
+
+   return 1  if $month =~ /^Jan/;
+   return 2  if $month =~ /^Feb/;
+   return 3  if $month =~ /^Mar/;
+   return 4  if $month =~ /^Apr/;
+   return 5  if $month =~ /^May/;
+   return 6  if $month =~ /^Jun/;
+   return 7  if $month =~ /^Jul/;
+   return 8  if $month =~ /^Aug/;
+   return 9  if $month =~ /^Sep/;
+   return 10 if $month =~ /^Oct/;
+   return 11 if $month =~ /^Nov/;
+   return 12 if $month =~ /^Dec/;
+   return 0;
+}

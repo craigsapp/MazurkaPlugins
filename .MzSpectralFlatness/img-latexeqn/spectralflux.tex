@@ -1,0 +1,17 @@
+\documentclass{article} 
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{bm}
+\newcommand{\mx}[1]{\mathbf{\bm{#1}}} % Matrix command
+\newcommand{\vc}[1]{\mathbf{\bm{#1}}} % Vector command 
+\newcommand{\T}{\text{T}}             % Transpose
+\pagestyle{empty} 
+\begin{document} 
+\begin{eqnarray*}
+\mbox{spectral flatness} & = & \frac{\mbox{\scriptsize geometric mean}}{\mbox{\scriptsize arithmetic mean}} \\
+%   & =  & \frac{\left(\displaystyle\prod_k x(k)\right)^{1/N}} {\frac{1}{N} \displaystyle\sum_k x(k)} \\
+   & =  & \frac{\sqrt[N]{\displaystyle\prod_k x(k)}} {\frac{1}{N} \displaystyle\sum_k x(k)}
+\end{eqnarray*}
+ \newpage 
+\end{document}

@@ -1,0 +1,400 @@
+#!/usr/bin/perl
+#
+# Programmer:    Craig Stuart Sapp <craig@ccrma.stanford.edu>
+# Creation Date: Sat May 27 02:24:08 PDT 2006
+# Last Modified: Sat May 27 02:24:08 PDT 2006
+# Filename:      mazurka/software/sv/plugin/download/makedownloadpage
+# Syntax:        perl 5
+#
+# Description:
+#
+
+
+use strict;
+
+my $template = $ARGV[0];
+
+open(TFILE, $template) or die "Cannot open $template for reading.";
+
+my @filestats;
+@filestats = stat TFILE;
+my $filesize = $filestats[7];
+my $contents;
+read TFILE, $contents, $filesize;
+close(TFILE);
+
+
+my $linuxcontents   = getLinuxContents("linux");
+my $windowscontents = getWindowsContents("windows");
+my $osxppc          = getOsxppcContents("osxppc");
+
+$contents =~ s/<<CONTENTS=linux>>/$linuxcontents/m;
+$contents =~ s/<<CONTENTS=windows>>/$windowscontents/m;
+$contents =~ s/<<CONTENTS=osxppc>>/$osxppc/m;
+
+print $contents;
+
+exit(0);
+
+##########################################################################
+
+
+
+##############################
+##
+## getFileList --
+##
+
+sub getFileList {
+   my ($dir, $ext) = @_;
+
+   my @output;
+   my $file;
+   opendir(MYDIR, "$dir") or die "Cannot open $dir directory.";
+   while ($file = readdir(MYDIR)) {
+      next if $file =~ /^\./;
+      next if -d "$dir/$file";
+      next if $file !~ /\.?$ext$/;
+      $output[@output] = $file;
+   }
+   closedir MYDIR;
+
+   return sort @output;
+}
+
+
+
+##############################
+##
+## getLinuxContents --
+##
+
+sub getLinuxContents {
+   my ($dir) = @_;
+   my $ext = "so";
+   my $output;
+
+   $output .= "<p>Save any of the following <i>.$ext</i> files into the directory";
+   $output .= " <tt><font color=blue><b>/usr/local/lib/vamp</b></font></tt>";
+   $output .= " if you are a superuser.  If not, then save to your home";
+   $output .= " directory in <tt><font color=blue><b>~/vamp</b></font></tt>.";
+   $output .= " If you want to download them from the terminal, type the following";
+   $output .= " command: <pre>         wget http://sv.mazurka.org.uk/download/linux/yyy</pre>";
+   $output .= " where <tt>yyy</tt> is one of the .so dynamic library files listed in red below.";
+   $output .= "<p>\n";
+
+   $output .= generateFileListing($dir, $ext);
+
+   return $output;
+
+}
+
+
+
+##############################
+##
+## generateFileListing -- 
+##
+
+sub generateFileListing {
+   my ($dir, $ext) = @_;
+
+   my $output;
+   my %plugininfo;
+
+   my @files = getFileList($dir, $ext);
+   my $setdate;
+   my $basename;
+   my @keys;
+   my $i;
+   my $j;
+   $output .= "<table cellspacing=10>";
+   $output .= "<tr><td><i>plugin&nbsp;name</i></td>";
+   $output .= "<td><i>dynamic&nbsp;library</i></td>";
+   $output .= "<td><i>file&nbsp;size</i></td>";
+   $output .= "<td><i>version</i></td>";
+   $output .= "<td><i>compile&nbsp;date</i></td>";
+   $output .= "</tr>";
+   if (-r "$dir/mazurka-plugins.$ext") {
+      ($setdate, %plugininfo)  =  getPluginSetDate("$dir/mazurka-plugins.$ext");
+      $filesize = getFileSize("$dir/mazurka-plugins.$ext");
+      $output .= "<tr><td>";
+      $output .= "</td><td>";
+      $output .= "<a class=plugin href=$dir/mazurka-plugins.$ext>mazurka-plugins.$ext</a>";
+      $output .= "</td><td align=right>";
+      $output .= $filesize;
+      $output .= "</td><td>";
+      $output .= "</td><td>";
+      $output .= $setdate;
+      $output .= "</td></tr>";
+
+      # display the compile dates/versions of individual plugins
+      # compiled into this set.
+
+      $output .= "<tr><td></td><td align=center colspan=2>";
+      @keys = sort keys %plugininfo;
+      $output .= "<table cellpadding=0 cellspacing=0><tr><td>";
+      for ($j=0; $j<@keys; $j++) {
+         $output .= getLink($keys[$j]);
+         $output .= "<br>";
+      }
+      $output .= "</td></tr></table>";
+      $output .= "</td><td>"; # version
+      my $ver;
+      for ($j=0; $j<@keys; $j++) {
+         $ver = $plugininfo{$keys[$j]};
+         $ver =~ s/\t.*//;
+         $output .= "$ver<br>";
+      }
+
+      $output .= "</td><td>"; # compile date
+      my $comp;
+      for ($j=0; $j<@keys; $j++) {
+         $comp = $plugininfo{$keys[$j]};
+         $comp =~ s/.*\t//;
+         $output .= "$comp<br>";
+      }
+      $output .= "</td></tr>\n";
+
+      $output .= "<tr><td>";
+      $output .= "</td><td colspan=4>";
+      $output .= "<a class=pluginsmall href=$dir/mazurka-plugins.$ext>mazurka-plugins.$ext</a> ";
+      $output .= "contains the following individually compiled plugins, so you do not need to ";
+      $output .= " download any of these individual plugins if you";
+      $output .= " download the main set.";
+      $output .= "</td></tr>";
+   } 
+
+
+   my $version;
+   my $compiledate;
+   my $filesize;
+   for ($i=0; $i<@files; $i++) {
+      $basename = $files[$i];
+      $basename =~ s/\.[^\.]+$//;
+      next if !inMainSet($basename, %plugininfo);
+      ($version, $compiledate) = getVersionInfo($dir, $files[$i]);
+      $filesize = getFileSize("$dir/$files[$i]");
+      if (-r "../$basename") {
+         $output .= "<tr><td>";
+         $output .= getLink($basename);
+         $output .= "<b>:</b></td><td>";
+         $output .= "<a class=plugin href=$dir/$files[$i]>$files[$i]</a>";
+         $output .= "</td><td align=right>";
+         $output .= $filesize;
+         $output .= "</td><td>";
+         $output .= $version;
+         $output .= "</td><td>";
+         $output .= $compiledate;
+         $output .= "</td></tr>";
+      }
+   }
+
+   $output .= "<tr><td colspan=5>";
+   $output .= "<br>\n";
+   $output .= "Below is a list of plugins which are not part of the main";
+   $output .= " mazurka plugin set (listed above) since they are for demonstration purposes";
+   $output .= " or are in the initial phase of development.";
+   $output .= "</td></tr>";
+
+   my $version;
+   my $compiledate;
+   my $filesize;
+   for ($i=0; $i<@files; $i++) {
+      $basename = $files[$i];
+      $basename =~ s/\.[^\.]+$//;
+      next if inMainSet($basename, %plugininfo);
+      ($version, $compiledate) = getVersionInfo($dir, $files[$i]);
+      $filesize = getFileSize("$dir/$files[$i]");
+      if (-r "../$basename") {
+         $output .= "<tr><td>";
+         $output .= getLink($basename);
+         $output .= "<b>:</b></td><td>";
+         $output .= "<a class=plugin href=$dir/$files[$i]>$files[$i]</a>";
+         $output .= "</td><td align=right>";
+         $output .= $filesize;
+         $output .= "</td><td>";
+         $output .= $version;
+         $output .= "</td><td>";
+         $output .= $compiledate;
+         $output .= "</td></tr>";
+      }
+   }
+
+
+
+   $output .= "</table>";
+
+   return $output;
+}
+
+
+
+##############################
+##
+## inMainSet --
+##
+
+sub inMainSet {
+   my ($basename, %plugininfo) = @_;
+
+   my $item;
+   my $found = 0;
+   foreach $item (keys %plugininfo) {
+      if ($item eq $basename) {
+         $found = 1;
+         last;
+      }
+   }
+
+   return $found;
+}
+
+
+
+##############################
+##
+## getWindowsContents --
+##
+
+sub getWindowsContents {
+   my ($dir) = @_;
+   my $ext = "dll";
+   my @files = getFileList($dir, $ext);
+   my $output;
+   my $setdate;
+
+   $output .= "<p>Save any of the following <i>.dll</i> files into the directory";
+   $output .= " <tt><font color=blue><b>C:\\Program&nbsp;Files\\Vamp&nbsp;Plugins</b></font></tt>.";
+   $output .= "<p>\n";
+
+   $output .= generateFileListing($dir, $ext);
+
+
+   return $output;
+}
+
+
+
+##############################
+##
+## getVersionInfo --
+##
+
+sub getVersionInfo {
+   my ($dir, $file) = @_;
+   my $version;
+   my $compiledate;
+   my $base = $file;
+   $base =~ s/\.[^\.]+$//;
+   my $data = `strings $dir/$file | grep VampPluginID`;
+   $data =~ /$base\@([\d]+)\@([^\@]+)\@\@/s;
+   $version = $1;
+   $compiledate = $2;
+   if ($compiledate =~ /^\s*([A-Za-z]+)\s+(\d+)\s+(\d+)/) {
+      $compiledate = "$2 $1 $3";
+   }
+
+   return ($version, $compiledate);
+}
+
+
+
+##############################
+##
+## getPluginSetDate --
+##
+
+sub getPluginSetDate {
+   my ($file) = @_;
+   my $data = `strings $file | grep VampPluginSet`;
+   $data =~ /\@\@VampPluginSet\@\s*([^\@]+)\s*\@/s;
+   my $compiledate = $1;
+   if ($compiledate =~ /^\s*([A-Za-z]+)\s+(\d+)\s+(\d+)/) {
+      $compiledate = "$2 $1 $3";
+   }
+
+   my $data = `strings $file | grep VampPluginID`;
+   my @datalines = split(/\n/, $data);
+   my $i;
+   my %plugininfo;
+   my $pluginname;
+   my $pluginversion;
+   my $plugincompiledate;
+   for ($i=0; $i<@datalines; $i++) {
+      if ($datalines[$i] =~ /\@\@VampPluginID\@([^\@]+)\@([\d]+)\@([^\@]+)\@\@/) {
+         $pluginname = $1;
+         $pluginversion = $2;
+         $plugincompiledate = $3;
+         if ($plugincompiledate =~ /^\s*([A-Za-z]+)\s+(\d+)\s+(\d+)/) {
+            $plugincompiledate = "$2 $1 $3";
+         }
+         $plugininfo{$pluginname} = "$pluginversion\t$plugincompiledate";
+      }
+   }
+
+   return ($compiledate, %plugininfo);
+}
+
+
+
+##############################
+##
+## getLink --
+##
+
+sub getLink($basename) {
+   my ($base) = @_;
+   my $fancy;
+
+   my $fancy = $base;
+
+   if ($fancy =~ /^Mz/) {
+      $fancy =~ s/^Mz//;
+      $fancy = "<sub><small><i>Mz</i></small></sub>$fancy";
+   }
+
+   return "<a class=link href=../$base>$fancy</a>";
+}
+
+
+
+##############################
+##
+## getOsxppcContents --
+##
+
+sub getOsxppcContents {
+   my ($dir) = @_;
+   my @files = getFileList($dir, "dylib");
+
+   return "None yet";
+}
+
+
+##############################
+#
+# getFileSize --
+#
+
+
+sub getFileSize {
+   my ($file) = @_;
+
+   open(TFILE, $file) or return "0&nbsp;k";
+   my @filestats;
+   @filestats = stat TFILE;
+   my $filesize = $filestats[7];
+   close(TFILE);
+
+   $filesize = int($filesize/ 1000.0 + 0.5);
+   if ($filesize > 999) {
+      $filesize = $filesize / 1000.0;
+      return "$filesize&nbsp;MB&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+   } else {
+      return "$filesize&nbsp;KB&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+   }
+
+}
+
+

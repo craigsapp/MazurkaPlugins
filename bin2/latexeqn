@@ -1,0 +1,344 @@
+#!/usr/bin/perl
+#
+# Programmer:    Craig Stuart Sapp <craig@ccrma.stanford.edu>
+# Creation Date: Sun May 14 05:06:52 PDT 2006
+# Last Modified: Sun May 14 05:06:52 PDT 2006
+# Filename:      latexeqn
+# Syntax:        perl 5
+#
+# Description:   Convert embedded latex equantions into graphics.
+#
+# Reference:     http://fauskes.net/nb/htmleqII/eqhtml.py
+
+use strict;
+
+my $filename = $ARGV[0];
+my $basedir  = $ARGV[1];
+$basedir = "." if $basedir =~ /^\s*$/;
+
+my @SCALEINDEX;
+$SCALEINDEX[0] = 1095;
+$SCALEINDEX[1] = 1200;
+$SCALEINDEX[2] = 1440;
+$SCALEINDEX[3] = 1728;
+$SCALEINDEX[4] = 2074;
+$SCALEINDEX[5] = 2488;
+$SCALEINDEX[6] = 2986;
+
+my %NAMEINDEX;
+my %INDEXEDNAME;
+my %SCALEINDEX;
+
+my $imgdir = "img-latexeqn";
+
+my %IMAGEOPTIONS;
+
+open(FILE, "$filename") or die "File not found: $filename";
+
+my @filestats = stat FILE;
+my $filesize  = $filestats[7];
+my $contents;
+read FILE, $contents, $filesize;
+close(FILE);
+
+
+### Extract equation list
+
+my %equations;
+my $counter = 0;
+
+# extract <div id="latexeqn"> fields
+my $counter = 0;
+$counter = $counter + 1;
+$counter = "0$counter" if $counter < 10;
+$counter = "0$counter" if $counter < 100;
+my $key = "ZAQWSXCDE${counter}RFVBGTYHN";
+my $value;
+while ($contents =~ s/(<div.*?latexeqn.*?<\/div>)/$key/si) {
+   $value = $1;
+   $equations{$key} = $value;
+   $counter = $counter + 1;
+   $counter = "0$counter" if $counter < 10;
+   $counter = "0$counter" if $counter < 100;
+   $key = "ZAQWSXCDE${counter}RFVBGTYHN";
+}
+
+# extract <span id="latexeqn"> fields
+$counter = $counter + 1;
+$counter = "0$counter" if $counter < 10;
+$counter = "0$counter" if $counter < 100;
+$key = "ZAQWSXCDE${counter}RFVBGTYHN";
+while ($contents =~ s/(<span.*?latexeqn.*?<\/span>)/$key/si) {
+   $value = $1;
+   $equations{$key} = $value;
+   $counter = $counter + 1;
+   $counter = "0$counter" if $counter < 10;
+   $counter = "0$counter" if $counter < 100;
+   $key = "ZAQWSXCDE${counter}RFVBGTYHN";
+}
+
+
+### Now the contents of equations  have been indexed in the file contents.
+
+#my @keys = sort keys %equations;
+#for $key (@keys) {
+#   print "================================$key\n";
+#   print $equations{$key};
+#   print "\n\n";
+#}
+
+#print $contents;
+
+createEquationImages(%equations);
+$contents = installEquationImages($contents, %equations);
+
+print $contents;
+
+exit(0);
+
+
+#########################################################################
+
+
+
+#############################
+##
+## installEquationImages --
+##
+
+sub installEquationImages {
+   my ($contents, %equations) = @_;
+
+   my @keys = sort keys %equations;
+
+   my $key;
+   my $pretext;
+   my $newdata;
+   my $filename;
+   my $imgopts;
+   foreach $key (@keys) {
+      $filename = getImageFilename($key, $equations{$key});
+      $imgopts  = getImageOptions($equations{$key});
+      $newdata  = "<img src=$imgdir/$filename.png $imgopts border=0>";
+      $pretext  = $equations{$key};
+      $pretext  =~ s/<!--\s*//sg;   # remove any previous comment markers
+      $pretext  =~ s/-->\s*//sg;    # remove any previous comment markers
+      $newdata  .= "\n<!--\n$equations{$key}\n-->\n";
+      $contents =~ s/$key/$newdata/;
+   }
+
+   return $contents;
+}
+
+
+#########################################################################
+
+##############################
+##
+## createImage -- 
+##
+
+sub createImage {
+   my ($key, $content) = @_;
+
+   my $filename = getImageFilename($key, $content);
+
+   # print "================== $basedir/$imgdir/$filename\n";
+   # print "$content\n\n";
+
+   #print "Creating file image $basedir/$imgdir/$filename.png\n";
+   open (TEXFILE, ">$basedir/$imgdir/$filename.tex") 
+      or die "Cannot open $basedir/$imgdir/$filename.tex for writing";
+
+   print TEXFILE <<"EOT";
+\\documentclass{article} 
+\\usepackage{amsmath}
+\\usepackage{amsthm}
+\\usepackage{amssymb}
+\\usepackage{bm}
+\\newcommand{\\mx}[1]{\\mathbf{\\bm{#1}}} % Matrix command
+\\newcommand{\\vc}[1]{\\mathbf{\\bm{#1}}} % Vector command 
+\\newcommand{\\T}{\\text{T}}             % Transpose
+\\pagestyle{empty} 
+\\begin{document} 
+EOT
+
+   my $preparedcontent = getPreparedContent($content);
+
+   print TEXFILE $preparedcontent;
+
+print TEXFILE <<"EOT";
+ \\newpage 
+\\end{document}
+EOT
+
+   # Latex file has been created, now convert to png file
+
+   my $scale = $SCALEINDEX{$key};
+   `(cd $basedir/$imgdir; latex $filename.tex)`;
+   `(cd $basedir/$imgdir; dvipng -T tight -x $scale -z 6 --gamma 2 -o $filename.png $filename)`;
+   `rm -f $basedir/$imgdir/$filename.log`;
+   `rm -f $basedir/$imgdir/$filename.dvi`;
+   `rm -f $basedir/$imgdir/$filename.aux`;
+
+}
+
+##############################
+##
+## getPreparedContent --  place equation in \[ \] (on separate lines)
+##   if a <div> command, or between $ $ (single line) if a <span> command.
+##
+
+sub getPreparedContent {
+   my ($pretent) = @_;
+
+   if ($pretent =~ /^<span/i) {
+      # single line equation
+      $pretent =~ s/<span[^>]*>//is;
+      $pretent =~ s/<\/span>//is;
+      $pretent =~ s/\n/ /gs;
+      return "\$ $pretent \$\n";
+   }
+
+   # multiple line equation
+   $pretent =~ s/<div[^>]*>//is;
+   $pretent =~ s/<\/div>//is;
+   my @pieces = split(/\n/, $pretent);
+   my $eqnarray = 0;
+   if ($pretent =~ /\&/s) {
+      $eqnarray = 1;
+   } 
+
+   my $output = "";
+
+   if ($eqnarray == 1) {
+      $output .= "\\begin{eqnarray*}\n";
+   } else {
+      $output .= "\\[\n";
+   }
+
+   my $item;
+   foreach $item (@pieces) {
+      next if $item =~ /^\s*$/;
+      $output .= "$item\n";
+   }
+
+   if ($eqnarray == 1) {
+      $output .= "\\end{eqnarray*}\n";
+   } else {
+      $output .= "\\]\n";
+   }
+
+   return $output;
+}
+
+
+
+
+##############################
+##
+## createEquationImages --
+##
+
+sub createEquationImages {
+   my %equationdata = @_;
+
+   if (!-d "$basedir/$imgdir") {
+      print "Creating $basedir/$imgdir to store images\n";
+      mkdir("$basedir/$imgdir", 0755) or die "Cannot create directory";
+   }
+
+   my $key;
+   my $value;
+   my @keys = sort keys %equationdata;
+   foreach $key (@keys) {
+      $value = $equationdata{$key};
+      createImage($key, $value);
+   }
+}
+
+
+
+##############################
+##
+## getImageOptions --
+##
+
+sub getImageOptions {
+   my ($content) = @_;
+
+   my $output = "";
+   if ($content =~ /imgopts\s*=\s*\"([^\"]+)\"/) {
+      $output = $1;
+   }
+   return $output;
+}
+
+
+
+##############################
+##
+## getImageFilename --
+##
+
+sub getImageFilename {
+   my ($key, $content) = @_;
+
+   if ($INDEXEDNAME{$key} !~ /^\s*$/) {
+      # have already given this equation a filename
+      return $INDEXEDNAME{$key};
+   }
+
+   my $number;
+   if ($key =~ /(\d+)/) {
+      $number = $1;
+   } else {
+      die "Key is not in correct syntax: $key";
+   }
+
+   my $name = "";
+   my $size = 0;
+   if ($content =~ /<div[^>]*name="?([^">\s]+)"?[^>]*>/i) {
+      $name = $1;
+   } elsif ($content =~ /<span[^>]*name="?([^">\s]+)"?[^>]*>/i) {
+      $name = $1;
+   }
+
+   if ($content =~ /<div[^>]*size="?([^">\s]+)"?[^>]*>/i) {
+      $size = int($1);
+   } elsif ($content =~ /<span[^>]*size="?([^">\s]+)"?[^>]*>/i) {
+      $size = int($1);
+   }
+
+
+   my $scale;
+   if ($size >= -1) {
+      $scale = $SCALEINDEX[$size+1];
+   }
+   $scale = $SCALEINDEX[1] if $scale < 10;
+   $SCALEINDEX{$key} = $scale;
+#   `echo "SIZE = $size" >> /tmp/debuggg`;
+#   `echo "SCALE = $scale" >> /tmp/debuggg`;
+
+
+   if ($name !~ /^\s*$/) {
+      if ($NAMEINDEX{$name} == 0) {
+         # creating a new name
+         $NAMEINDEX{$name} = 1;
+      } else {
+         $NAMEINDEX{$name}++;
+         $name .= "-$NAMEINDEX{$name}";
+      }
+   } else {
+      # use the key number as the filename
+      $name = "latexeqn$number";
+      # it shouldn't be in the name index, so ignore checking for now...
+      $NAMEINDEX{$name}++;
+   }
+
+   $INDEXEDNAME{$key} = $name;
+
+   return $name;
+}
+
+

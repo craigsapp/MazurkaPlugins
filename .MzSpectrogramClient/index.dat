@@ -1,0 +1,88 @@
+@BEGIN:	SVPLUGIN
+
+@NAME: MzSpectrogramClient
+@APROPOS: Demonstration of how to create spectral data from time data supplied by a host application.
+
+@SUMMARY:  The MzSpectrogramClient plugin accepts time-sequence audio
+	data as input from the host application and applies a Fourier 
+	transform to the data generate a spectrum.  The plugin then
+	calculates and outputs the non-negative frequency magnitude 
+	spectrum.
+
+@PARAMETERS:
+
+@OUTPUTS:
+@OUTPUT01: The magnitude spectrogram
+
+@INPUTS: Currently will only measure the power of the first audio channel.
+	If a stereo files is input, the right channel will be ignored.
+
+@DESCRIPTION:  The MzSpectrogramClient plugin produces the same
+output as the <a class=link href=../MzSpectrogramHost>MzSpectrogramHost</a> plugin.
+The difference between the two plugins is how the output is produced.
+MzSpectrogramHost receives the pre-calculated complex frequency spectrum
+from the host, while MzSpectrogramClient receives the time-based
+audio signal from the host and then calculates the complex frequency
+spectrum itself.
+
+<p> The MzSpectogramClient is a useful template for how to write your
+own frequency analysis plugin where more control over the transform
+process is necessary, or you want to implement a transform other than
+a Discrete Fourier Transform, such as a wavelet transform.  
+Also, the analysis window applied to the audio signal in MzSpectrogramHost
+is controlled by the host (usually selected by the user, or set to a
+default type).  If your plugin needs a specific analysis window which
+cannot be supplied by the host, then you should use a client-based
+transform as given in this example plugin.
+
+While MzSpectrogramHost just calculates the magnitude spectrum
+directly from the complex spectrum data sent by the host, MzSpectrogramClient
+requires three prepatory steps to generate the spectrum
+in the 
+<a class=link href=src/MzSpectrogramClient.cpp.html#process>process()</a> function:
+<ol>
+<li> <a class=link href=src/MzSpectrogramClient.cpp.html#makeHannWindow>Generate an analysis window</a> (done once for all processing 
+     in the <a class=link href=src/MzSpectrogramClient.cpp.html#initialise>initialise()</a> function)
+<li> <a class=link href=src/MzSpectrogramClient.cpp.html#windowSignal>Apply the analysis window on the input signal</a>
+<li> <a class=link href=src/MzSpectrogramClient.cpp.html#fft>Apply the Fast Fourier Transform to the signal</a>
+</ol>
+
+<p>
+Notice that the parameter list of the 
+<a class=link href=src/MzSpectrogramClient.cpp.html#makeMagnitudeSpectrum>makeMagnitudeSpectrum()</a> function had to be changed from the 
+<a class=link href=../MzSpectrogramHost/src/MzSpectrogramHost.cpp.html#makeMagnitudeSpectrum>one in MzSpectrogramHost</a> because the output of the
+<a class=link href=src/MzSpectrogramClient.cpp.html#fft>fft()</a> function 
+does not interleave the real and imaginary components of the complex
+spectrum.
+
+
+<p> Also notice that the function 
+<a class=link href=src/MzSpectrogramClient.cpp.html#getInputDomain>getInputDomain</a> returns the value <i>TimeDomain</i> rather than <i>FrequencyDomain</i>
+since the client plugin receives time data and will calculate its
+own frequency domain data.
+
+@SEEALSO:
+
+In order of complexity:
+<ol>
+   <li> <a class=link href=../MzSpectrogramHost>MzSpectrogramHost</a> -- 
+	demonstrates how to receive and process spectral data from 
+        the host application.
+   <li> MzSpectrogramClient -- described on this page:
+        demonstrates how to generate and process spectral data generated
+        from time data provided by the host application.
+   <li> <a class=link href=../MzSpectrogramFFTW>MzSpectrogramFFTW</a> -- demonstrates how
+        to do three-to-four times faster Fourier transforms than MzSpectrgramClient.
+   <li> <a class=link href=../MzNevermore>MzNevermore</a> -- a full-featured
+        Spectrogram display function based on MzSpectrgramFFTW.
+</ol>
+
+@LIMITATIONS: 
+
+@BUGS: 
+
+@BEGIN:	REFERENCES
+@REFERENCE:
+@END:	REFERENCES
+
+@END:	SVPLUGIN

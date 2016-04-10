@@ -1,0 +1,702 @@
+<!---------------------------------------------------------------------------->
+<html>
+<head>
+<title> Sig++ example program: MzPowerCurve.cpp </title>
+<meta name="Document-Owner" content="Craig Sapp (craig@ccrma.stanford.edu)"> 
+<meta name="Author" content="Craig Stuart Sapp (craig@ccrma.stanford.edu)">
+<meta name="Creation-Date" content=" Tue May  9 19:38:11 PDT 2000 ">
+<meta name="Revision-Date" content=" Wed Dec 27 07:42:41 PST 2006
+ ">
+</head>
+
+<body bgcolor=#ffffff alink=#333399 link=#333399 vlink=#333399 text=#220000>
+<!-- header *************************************************** -->
+
+<center>
+<table width=760 cellpadding=0 cellspacing=0 border=0>
+<tr valign=top>
+<td>
+   <a href=http://www.charm.rhul.ac.uk><img alt="" border=0 src=../../images/logo.gif></a>
+</td>
+<td>
+   <a href=http://mazurka.org.uk><img alt="" border=0 src=../../images/banner.gif></a>
+</td>
+</tr>
+</table>
+</center>
+
+<center>
+<table><tr><td>
+
+
+<pre>
+<font color=#229933>//</font>
+<font color=#229933>// Programmer:    Craig Stuart Sapp &lt;craig@ccrma.stanford.edu&gt;</font>
+<font color=#229933>// Creation Date: Sat May 13 12:19:13 PDT 2006</font>
+<font color=#229933>// Last Modified: Sat May 20 15:24:51 PDT 2006 (added parameter control)</font>
+<font color=#229933>// Last Modified: Tue Jun 20 19:42:50 PDT 2006 (features and/or bugs added)</font>
+<font color=#229933>// Last Modified: Sun Jul  9 06:42:47 PDT 2006 (automated scaled power slope)</font>
+<font color=#229933>// Filename:      MzPowerCurve.cpp</font>
+<font color=#229933>// URL:           <a href=http://sv.mazurka.org.uk/src/MzPowerCurve.cpp>http://sv.mazurka.org.uk/src/MzPowerCurve.cpp</a></font>
+<font color=#229933>// Documentation: <a href=http://sv.mazurka.org.uk/MzPowerCurve>http://sv.mazurka.org.uk/MzPowerCurve</a></font>
+<font color=#229933>// Syntax:        ANSI99 C++; vamp 0.9 plugin</font>
+<font color=#229933>//</font>
+<font color=#229933>// Description:   Calculate the power of an audio signal as it changes </font>
+<font color=#229933>//                over time.</font>
+<font color=#229933>//</font>
+
+#include "MzPowerCurve.h" 
+#include "MazurkaWindower.h"
+
+#include &lt;math.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define ZEROLOG -120.0
+
+#define FILTER_SYMMETRIC	0
+#define FILTER_FORWARD		1
+#define FILTER_BACKWARD		2
+
+
+<font color=#229933>///////////////////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// Vamp Interface Functions</font>
+<font color=#229933>//</font>
+<a name=constructor>
+</a><font color=#229933>///////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzPowerCurve::MzPowerCurve</b> -- class constructor.</font>
+<font color=#229933>//</font>
+
+MzPowerCurve::MzPowerCurve(float samplerate) :<a name=MazurkaPlugin> </a><font color=#000000><b>MazurkaPlugin</b></font>(samplerate) {
+   mz_windowsum = 1.0;
+}
+
+
+<a name=destructor>
+</a><font color=#229933>///////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzPowerCurve::~MzPowerCurve</b> -- class destructor.</font>
+<font color=#229933>//</font>
+
+MzPowerCurve::~MzPowerCurve() {
+   <font color=#229933>// do nothing</font>
+}
+
+
+
+<font color=#229933>////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// optional polymorphic parameter functions inherited from PluginBase:</font>
+<font color=#229933>//</font>
+<font color=#229933>// Note that the getParameter() and setParameter() polymorphic functions</font>
+<font color=#229933>// are handled in the MazurkaPlugin class.</font>
+<font color=#229933>//</font>
+<a name=getParameterDescriptors>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzPowerCurve::getParameterDescriptors</b> -- return a list of</font>
+<font color=#229933>//      the parameters which can control the plugin.</font>
+<font color=#229933>//</font>
+
+MzPowerCurve::ParameterList MzPowerCurve::getParameterDescriptors(void) const {
+
+   ParameterList       pdlist;
+   ParameterDescriptor pd;
+
+   <font color=#229933>// first parameter: The size of the analysis window in milliseconds</font>
+   pd.name         = "windowsize";
+   pd.description  = "Window size";
+   pd.unit         = "ms";
+   pd.minValue     = 10.0;
+   pd.maxValue     = 10000.0;
+   pd.defaultValue = 10.0;
+   pd.isQuantized  = 0;
+   <font color=#229933>// pd.quantizeStep = 0.0;</font>
+   pdlist.push_back(pd);
+
+   <font color=#229933>// second parameter: The hop size between windows in milliseconds</font>
+   pd.name         = "hopsize";
+   pd.description  = "Window hop size";
+   pd.unit         = "ms";
+   pd.minValue     = 1.0;
+   pd.maxValue     = 10000.0;
+   pd.defaultValue = 10.0;
+   pd.isQuantized  = 0;
+   <font color=#229933>// pd.quantizeStep = 0.0;</font>
+   pdlist.push_back(pd);
+
+   <font color=#229933>// third parameter: Windowing method</font>
+   pd.name         = "window";
+   pd.description  = "Weighting window";
+   pd.unit         = "";
+   pd.minValue     = 1.0;
+   MazurkaWindower::getWindowList(pd.valueNames);
+   pd.maxValue     = pd.valueNames.size();
+   pd.defaultValue = 1.0;
+   pd.isQuantized  = 1;
+   pd.quantizeStep = 1.0;
+   pdlist.push_back(pd);
+   pd.valueNames.clear();
+
+   <font color=#229933>// fourth parameter: Factor for exponential smoothing filter</font>
+   pd.name         = "smoothingfactor";
+   pd.description  = "Smoothing\n  (outputs 2-4)";
+   pd.unit         = "";
+   pd.minValue     = -1.0;
+   pd.maxValue     = 1.0;
+   pd.defaultValue = 0.2;
+   pd.isQuantized  = 0;
+   <font color=#229933>// pd.quantizeStep = 0.0;</font>
+   pdlist.push_back(pd);
+
+   <font color=#229933>// fifth parameter: Filtering method</font>
+   pd.name         = "filtermethod";
+   pd.description  = "Filter method\n  (outputs 2-4)";
+   pd.unit         = "";
+   pd.minValue     = 0.0;
+   pd.maxValue     = 2.0;
+   pd.defaultValue = 0.0;
+   pd.isQuantized  = 1;
+   pd.quantizeStep = 1.0;
+   pd.valueNames.push_back("Symmetric");
+   pd.valueNames.push_back("Forward");
+   pd.valueNames.push_back("Reverse");
+   pdlist.push_back(pd);
+   pd.valueNames.clear();
+
+<font color=#992233>/*    
+   <font color=#229933>// sixth parameter: Cut-off threshold for scaled power slope</font>
+   pd.name         = "cutoffthreshold";
+   pd.description  = "Cut-off threshold\n  (output 4 only)";
+   pd.unit         = "dB";
+   pd.minValue     = -100.0;
+   pd.maxValue     = 10.0;
+   pd.defaultValue = -40.0;
+   pd.isQuantized  = 0;
+   <font color=#229933>// pd.quantizeStep = 0.0;</font>
+   pdlist.push_back(pd);
+
+   <font color=#229933>// seventh parameter: The width of the cut-off transition region</font>
+   pd.name         = "cutoffwidth";
+   pd.description  = "Cut-off width\n  (output 4 only)";
+   pd.unit         = "dB";
+   pd.minValue     = 1.0;
+   pd.maxValue     = 100.0;
+   pd.defaultValue = 20.0;
+   pd.isQuantized  = 0;
+   <font color=#229933>// pd.quantizeStep = 0.0;</font>
+   pdlist.push_back(pd);
+
+*/</font>
+
+   return pdlist;
+}
+
+
+<font color=#229933>////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// optional polymorphic functions inherited from Plugin:</font>
+<font color=#229933>//</font>
+<a name=getPreferredStepSize>
+</a><font color=#229933>/////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzPowerCurve::getPreferredStepSize</b> --</font>
+<font color=#229933>//</font>
+
+size_t MzPowerCurve::getPreferredStepSize(void) const { 
+   return size_t(getParameter("hopsize")*getSrate()/1000.0 + 0.5);
+}
+
+
+<a name=getPreferredBlockSize>
+</a><font color=#229933>/////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzPowerCurve::getPreferredBlockSize</b> --</font>
+<font color=#229933>//</font>
+
+size_t MzPowerCurve::getPreferredBlockSize(void) const { 
+   return size_t(getParameter("windowsize")*getSrate()/1000.0 + 0.5);
+}
+
+
+<font color=#229933>////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// required polymorphic functions inherited from PluginBase:</font>
+<font color=#229933>//</font>
+
+std::string MzPowerCurve::getName(void) const
+   { return "mzpowercurve"; }
+
+std::string MzPowerCurve::getMaker(void) const
+   { return "The Mazurka Project"; }
+
+std::string MzPowerCurve::getCopyright(void) const
+   { return "2006 Craig Stuart Sapp"; }
+
+std::string MzPowerCurve::getDescription(void) const
+   { return "Power Curve"; }
+
+int MzPowerCurve::getPluginVersion(void) const {
+   #define P_VER    "200607100"
+   #define P_NAME   "MzPowerCurve"
+
+   const char *v = "@@VampPluginID@" P_NAME "@" P_VER "@" __DATE__ "@@";
+   if (v[0] != '@') { std::cerr &lt;&lt; v &lt;&lt; std::endl; return 0; }
+   return atol(P_VER);
+}
+
+
+<font color=#229933>////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// required polymorphic functions inherited from Plugin:</font>
+<font color=#229933>//</font>
+<a name=getInputDomain>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzPowerCurve::getInputDomain</b> -- the host application needs</font>
+<font color=#229933>//    to know if it should send either:</font>
+<font color=#229933>//</font>
+<font color=#229933>// TimeDomain      == Time samples from the audio waveform.</font>
+<font color=#229933>// FrequencyDomain == Spectral frequency frames which will arrive</font>
+<font color=#229933>//                    in an array of interleaved real, imaginary</font>
+<font color=#229933>//                    values for the complex spectrum (both positive </font>
+<font color=#229933>//                    and negative frequencies). Zero Hz being the</font>
+<font color=#229933>//                    first frequency sample and negative frequencies</font>
+<font color=#229933>//                    at the far end of the array as is usually done.</font>
+<font color=#229933>//                    Note that frequency data is transmitted from</font>
+<font color=#229933>//                    the host application as floats.  The data will</font>
+<font color=#229933>//                    be transmitted via the process() function which</font>
+<font color=#229933>//                    is defined further below.</font>
+<font color=#229933>//</font>
+
+MzPowerCurve::InputDomain MzPowerCurve::getInputDomain(void) const { 
+   return TimeDomain; 
+}
+
+
+<a name=getOutputDescriptors>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzPowerCurve::getOutputDescriptors</b> -- return a list describing</font>
+<font color=#229933>//    each of the available outputs for the object.  OutputList</font>
+<font color=#229933>//    is defined in the file vamp-sdk/Plugin.h:</font>
+<font color=#229933>//</font>
+<font color=#229933>// .name             == short name of output for computer use.  Must not</font>
+<font color=#229933>//                      contain spaces or punctuation.</font>
+<font color=#229933>// .description      == long name of output for human use.</font>
+<font color=#229933>// .unit             == the units or basic meaning of the data in the </font>
+<font color=#229933>//                      specified output.</font>
+<font color=#229933>// .hasFixedBinCount == true if each output feature (sample) has the </font>
+<font color=#229933>//                      same dimension.</font>
+<font color=#229933>// .binCount         == when hasFixedBinCount is true, then this is the </font>
+<font color=#229933>//                      number of values in each output feature.  </font>
+<font color=#229933>//                      binCount=0 if timestamps are the only features,</font>
+<font color=#229933>//                      and they have no labels.</font>
+<font color=#229933>// .binNames         == optional description of each bin in a feature.</font>
+<font color=#229933>// .hasKnownExtent   == true if there is a fixed minimum and maximum</font>
+<font color=#229933>//                      value for the range of the output.</font>
+<font color=#229933>// .minValue         == range minimum if hasKnownExtent is true.</font>
+<font color=#229933>// .maxValue         == range maximum if hasKnownExtent is true.</font>
+<font color=#229933>// .isQuantized      == true if the data values are quantized.  Ignored</font>
+<font color=#229933>//                      if binCount is set to zero.</font>
+<font color=#229933>// .quantizeStep     == if isQuantized, then the size of the quantization,</font>
+<font color=#229933>//                      such as 1.0 for integers.</font>
+<font color=#229933>// .sampleType       == Enumeration with three possibilities:</font>
+<font color=#229933>//   OD::OneSamplePerStep   -- output feature will be aligned with</font>
+<a name=VariableSampleRate><font color=#229933>//                             the beginning time of the input block data.</font>
+</a><font color=#229933>//   OD::FixedSampleRate    -- results are evenly spaced according to </font>
+<font color=#229933>//                             .sampleRate (see below).</font>
+<font color=#229933>//   <b>OD::VariableSampleRate</b> -- output features have individual timestamps.</font>
+<font color=#229933>// .sampleRate       == samples per second spacing of output features when</font>
+<font color=#229933>//                      sampleType is set toFixedSampleRate.</font>
+<font color=#229933>//                      Ignored if sampleType is set to OneSamplePerStep</font>
+<font color=#229933>//                      since the start time of the input block will be used.</font>
+<font color=#229933>//                      Usually set the sampleRate to 0.0 if VariableSampleRate</font>
+<font color=#229933>//                      is used; otherwise, see vamp-sdk/Plugin.h for what</font>
+<font color=#229933>//                      positive sampleRates would mean.</font>
+<font color=#229933>//</font>
+
+MzPowerCurve::OutputList MzPowerCurve::getOutputDescriptors(void) const {
+
+   OutputList       list;
+   OutputDescriptor od;
+
+   <font color=#229933>// First output channel:</font>
+   od.name             = "rawpower";
+   od.description      = "Raw Power";
+   od.unit             = "dB";
+   od.hasFixedBinCount = true;
+   od.binCount         = 1;
+   od.hasKnownExtents  = false;
+   <font color=#229933>// od.minValue      = 0.0;</font>
+   <font color=#229933>// od.maxValue      = 0.0;</font>
+   od.isQuantized      = false;
+   <font color=#229933>// od.quantizeStep  = 1.0;</font>
+   od.sampleType       = OutputDescriptor::VariableSampleRate;
+   <font color=#229933>// od.sampleRate    = 0.0;</font>
+   list.push_back(od);
+
+   <font color=#229933>// Second output channel: (smoothed data)</font>
+   od.name             = "smoothpower";
+   od.description      = "Smoothed Power";
+   od.unit             = "dB";
+   od.hasFixedBinCount = true;
+   od.binCount         = 1;
+   od.hasKnownExtents  = false;
+   <font color=#229933>// od.minValue      = 0.0;</font>
+   <font color=#229933>// od.maxValue      = 0.0;</font>
+   od.isQuantized      = false;
+   <font color=#229933>// od.quantizeStep  = 1.0;</font>
+   od.sampleType       = OutputDescriptor::VariableSampleRate;
+   <font color=#229933>// od.sampleRate    = 0.0;</font>
+   list.push_back(od);
+
+   <font color=#229933>// Third output channel: (smoothed data slope)</font>
+   od.name             = "smoothpowerslope";
+   od.description      = "Smoothed Power Slope";
+   od.unit             = "dB slope";
+   od.hasFixedBinCount = true;
+   od.binCount         = 1;
+   od.hasKnownExtents  = false;
+   <font color=#229933>// od.minValue      = 0.0;</font>
+   <font color=#229933>// od.maxValue      = 0.0;</font>
+   od.isQuantized      = false;
+   <font color=#229933>// od.quantizeStep  = 1.0;</font>
+   od.sampleType       = OutputDescriptor::VariableSampleRate;
+   <font color=#229933>// od.sampleRate    = 0.0;</font>
+   list.push_back(od);
+
+   <font color=#229933>// Fourth output channel: (smoothed data slope product)</font>
+   od.name             = "powerslopeproduct";
+   od.description      = "Scaled Power Slope";
+   od.unit             = "dB slope";
+   od.hasFixedBinCount = true;
+   od.binCount         = 1;
+   od.hasKnownExtents  = false;
+   <font color=#229933>// od.minValue      = 0.0;</font>
+   <font color=#229933>// od.maxValue      = 0.0;</font>
+   od.isQuantized      = false;
+   <font color=#229933>// od.quantizeStep  = 1.0;</font>
+   od.sampleType       = OutputDescriptor::VariableSampleRate;
+   <font color=#229933>// od.sampleRate    = 0.0;</font>
+   list.push_back(od);
+   
+   return list; 
+}
+
+
+<a name=initialise>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzPowerCurve::initialise</b> -- this function is called once</font>
+<font color=#229933>//     before the first call to process().</font>
+<font color=#229933>//</font>
+
+bool MzPowerCurve::initialise(size_t channels, size_t stepsize, 
+      size_t blocksize) {
+
+   if (channels &lt; getMinChannelCount() || channels &gt; getMaxChannelCount()) {
+      return false;
+   }
+
+   <font color=#229933>// step size and block size should never be zero</font>
+   if (stepsize &lt;= 0 || blocksize &lt;= 0) {
+      return false;
+   }
+
+   setChannelCount(channels);
+   setStepSize(stepsize);
+   setBlockSize(blocksize);
+
+
+   mz_window.makeWindow(getParameterString("window"), getBlockSize());
+
+   if (mz_window.getWindowType() == "Rectangular" ||
+       mz_window.getWindowType() == "Unknown") {
+      mz_windowsum = 1.0;
+   } else {
+      mz_windowsum = mz_window.getWindowSum() / mz_window.getSize();
+   }
+
+   switch (getParameterInt("filtermethod")) {
+      case FILTER_FORWARD:
+         mz_filterforward  = 1;
+         mz_filterbackward = 0;
+         break;
+      case FILTER_BACKWARD:
+         mz_filterforward  = 0;
+         mz_filterbackward = 1;
+         break;
+      case FILTER_SYMMETRIC:
+      default:
+         mz_filterforward  = 1;
+         mz_filterbackward = 1;
+   }
+
+   rawpower.clear();
+
+   return true;
+}
+
+
+<a name=process>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzPowerCurve::process</b> -- This function is called sequentially on the </font>
+<font color=#229933>//    input data, block by block.  After the sequence of blocks has been</font>
+<font color=#229933>//    processed with process(), the function getRemainingFeatures() will </font>
+<font color=#229933>//    be called.</font>
+<font color=#229933>//</font>
+<font color=#229933>// Here is a reference chart for the Feature struct:</font>
+<font color=#229933>//</font>
+<font color=#229933>// .hasTimestamp   == If the OutputDescriptor.sampleType is set to</font>
+<font color=#229933>//                    VariableSampleRate, then this should be "true".</font>
+<font color=#229933>// .timestamp      == The time at which the feature occurs in the time stream.</font>
+<font color=#229933>// .values         == The float values for the feature.  Should match</font>
+<font color=#229933>//                    OD::binCount.</font>
+<font color=#229933>// .label          == Text associated with the feature (for time instants).</font>
+<font color=#229933>//</font>
+
+MzPowerCurve::FeatureSet MzPowerCurve::process(float **inputbufs, 
+      Vamp::RealTime timestamp) {
+
+   if (getChannelCount() &lt;= 0) {
+      std::cerr &lt;&lt; "ERROR: MzPowerCurve::process: "
+                &lt;&lt; "MzPowerCurve has not been initialized"
+                &lt;&lt; std::endl;
+      return FeatureSet();
+   }
+
+   <font color=#229933>// calculate the raw power for the given input block of audio.</font>
+   <font color=#229933>// Further processing of the raw power data will be done in</font>
+   <font color=#229933>// the getRemainingFeatures() function.</font>
+
+   int    i;
+   double value;
+   double sum = 0.0;
+
+   if (mz_window.getWindowType() == "Unknown" || 
+       mz_window.getWindowType() == "Rectangular") {
+      <font color=#229933>// do unweighted power calculation</font>
+      for (i=0; i&lt;getBlockSize(); i++) {
+         value = inputbufs[0][i];
+         sum += value * value;
+      }
+   } else {
+      <font color=#229933>// do weighted power calculation</font>
+      for (i=0; i&lt;getBlockSize(); i++) {
+         value = inputbufs[0][i];
+         sum += value * value * mz_window[i];
+      }
+   }
+
+   float power; 
+   if (sum &lt;= 0.0) {
+      power = ZEROLOG;
+   } else {
+      power = 10.0 * log10(sum/getBlockSize()/mz_windowsum);
+   }
+
+   FeatureSet returnFeatures;
+   Feature    feature;
+
+   <font color=#229933>// center the location of the power measurement at the</font>
+   <font color=#229933>// middle of the analysis region rather than at the beginning.</font>
+   feature.hasTimestamp = true;
+   feature.timestamp    = timestamp + 
+                  Vamp::RealTime::fromSeconds(0.5 * getBlockSize()/getSrate());
+
+   feature.values.push_back(power);
+
+   <font color=#229933>// also store the power measurement for later processing in</font>
+   <font color=#229933>// getRemainingFeatures():</font>
+   rawpower.push_back(power);
+
+   returnFeatures[0].push_back(feature);
+
+   return returnFeatures;
+}
+
+
+<a name=getRemainingFeatures>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzPowerCurve::getRemainingFeatures</b> -- This function is called</font>
+<font color=#229933>//    after the last call to process() on the input data stream has </font>
+<font color=#229933>//    been completed.  Features which are non-causal can be calculated </font>
+<font color=#229933>//    at this point.  See the comment above the process() function</font>
+<font color=#229933>//    for the format of output Features.</font>
+<font color=#229933>//</font>
+
+MzPowerCurve::FeatureSet MzPowerCurve::getRemainingFeatures(void) {
+
+   int i;
+   double filterk = getParameter("smoothingfactor");
+   double oneminusk = 1.0 - filterk;
+   int size = rawpower.size();
+   std::vector&lt;double&gt; smoothpower(size, true);
+
+   <font color=#229933>// Difference equation for smoothing: y[n] = k * x[n] + (1-k) * y[n-1]</font>
+
+   <font color=#229933>// do reverse smoothing: time symmetric filtering to remove filter delays</font>
+   if (mz_filterbackward && mz_filterforward) {
+
+      <font color=#229933>// reverse filtering first </font>
+      smoothpower[size-1] = rawpower[size-1];
+      for (i=size-2; i&gt;=0; i--) {
+         smoothpower[i] = filterk*rawpower[i] + oneminusk*smoothpower[i+1];
+      }
+
+      <font color=#229933>// then forward filtering</font>
+      for (i=1; i&lt;size; i++) {
+         smoothpower[i] = filterk*smoothpower[i] + oneminusk*smoothpower[i-1];
+      }
+   } else if (mz_filterbackward) {
+      smoothpower[size-1] = rawpower[size-1];
+      for (i=size-2; i&gt;=0; i--) {
+         smoothpower[i] = filterk * rawpower[i] + oneminusk * smoothpower[i+1];
+      }
+   } else if (mz_filterforward) {
+      <font color=#229933>// do forward smoothing:</font>
+      smoothpower[0] = rawpower[0];
+      for (i=1; i&lt;size; i++) {
+         smoothpower[i] = filterk * rawpower[i] + oneminusk * smoothpower[i-1];
+      }
+   } else {
+      smoothpower = rawpower;
+   }
+
+
+   FeatureSet returnFeatures;
+   Feature    feature;
+   feature.hasTimestamp = true;
+
+   <font color=#229933>// process output features #2: smoothed power data</font>
+
+   double timeinsec;
+   for (i=0; i&lt;size; i++) {
+      timeinsec = (getBlockSize()*0.5 + i * getStepSize())/getSrate();
+      feature.timestamp = Vamp::RealTime::fromSeconds(timeinsec);
+      feature.values.clear();
+      feature.values.push_back(float(smoothpower[i]));
+      returnFeatures[1].push_back(feature);
+   }
+
+   <font color=#229933>// process output features #3 here: smoothed power slope</font>
+   
+   std::vector&lt;double&gt; smoothslope(size-1, true);
+   for (i=0; i&lt;size-1; i++) {
+      smoothslope[i] = smoothpower[i+1] - smoothpower[i];
+      <font color=#229933>// adding additional 1/2 of the block size to center the peaks </font>
+      <font color=#229933>// at attack points</font>
+      timeinsec = (getBlockSize()*0.5 + (i+0.5)*getStepSize())/getSrate();
+      feature.timestamp = Vamp::RealTime::fromSeconds(timeinsec);
+      feature.values.clear();
+      feature.values.push_back(float(smoothslope[i]));
+      returnFeatures[2].push_back(feature);
+   }
+
+   <font color=#229933>// process output features #4 here: scaled smoothed power slope </font>
+
+   double mean = getMean(smoothpower);
+   double sd   = getStandardDeviation(smoothpower);
+   
+   std::vector&lt;double&gt; productslope(size-1, true);
+   double cutoff = mean - 1.5 * sd;
+   double width  = sd / 2.0;
+   double scaling;
+   for (i=0; i&lt;size-1; i++) {
+      scaling = (smoothpower[i] - cutoff)/width;
+      scaling = 1.0 / (1.0 + pow(2.718281828, -scaling)); <font color=#229933>//sigmoid function</font>
+      productslope[i] = smoothslope[i] * scaling;
+      <font color=#229933>// adding additional 1/2 of the block size to center the peaks </font>
+      <font color=#229933>// at attack points</font>
+      timeinsec = (getBlockSize()*0.5 + (2*i+1)*getStepSize())/(2.0*getSrate());
+      feature.timestamp = Vamp::RealTime::fromSeconds(timeinsec);
+      feature.values.clear();
+      feature.values.push_back(float(productslope[i]));
+      returnFeatures[3].push_back(feature);
+   }
+
+   return returnFeatures;
+}
+
+
+<a name=reset>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzPowerCurve::reset</b> -- This function may be called after data processing</font>
+<font color=#229933>//    has been started with the process() function.  It will be called when</font>
+<font color=#229933>//    processing has been interrupted for some reason and the processing</font>
+<font color=#229933>//    sequence needs to be restarted (and current analysis output thrown out).  </font>
+<font color=#229933>//    After this function is called, process() will start at the beginning</font>
+<font color=#229933>//    of the input selection as if initialise() had just been called.</font>
+<font color=#229933>//    Note, however, that initialise() will NOT be called before processing </font>
+<font color=#229933>//    is restarted after a reset().</font>
+<font color=#229933>//</font>
+
+void MzPowerCurve::reset(void) {
+   rawpower.clear();
+}
+
+
+
+<font color=#229933>///////////////////////////////////////////////////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// Non-Interface Functions </font>
+<font color=#229933>//</font>
+<a name=getMean>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzPowerCurve::getMean</b> -- </font>
+<font color=#229933>//</font>
+
+double MzPowerCurve::getMean(std::vector&lt;double&gt;& data) {
+   double sum;
+   int i;
+
+   sum = 0.0;
+   for (i=0; i&lt;(int)data.size(); i++) {
+      sum += data[i];
+   }
+   return (sum / data.size());
+}
+
+
+<a name=getStandardDeviation>
+</a><font color=#229933>//////////////////////////////</font>
+<font color=#229933>//</font>
+<font color=#229933>// <b>MzPowerCurve::getStandardDeviation</b> -- </font>
+<font color=#229933>//</font>
+
+double MzPowerCurve::getStandardDeviation(std::vector&lt;double&gt;& data) {
+
+   double mean = getMean(data);
+   double sum  = 0.0;
+   double value;
+   int i;
+
+   for (i=0; i&lt;(int)data.size(); i++) {
+      value = data[i] - mean;
+      sum += value * value;
+   }
+
+   return sqrt(sum / data.size());
+}
+
+
+
+</pre>
+
+
+</td></tr>
+</table>
+</center>
+
+
+
+
+</body>
+</html>
+   

@@ -1,0 +1,318 @@
+<!---------------------------------------------------------------------------->
+<html>
+<head>
+<title> Manpage for SV Mazurka Plugin: MzChronogram</title>
+<meta name="Document-Owner" content="Craig Sapp (craig@ccrma.stanford.edu)"> 
+<meta name="Author" content="Craig Stuart Sapp (craig@ccrma.stanford.edu)">
+<meta name="Creation-Date" content=" Wed Mar  9 15:11:34 PST 2005 ">
+<meta name="Revision-Date" content=" Wed Mar  9 15:11:34 PST 2005 ">
+<style type="text/css">
+<!-- 
+.pluginname { font-weight: bold;
+            text-decoration: none; 
+            font-size: 125%;
+            color: #116611}
+
+.plugintitlesv { font-weight: bold;
+            text-decoration: none; 
+            font-size: 200%;
+            color: #2faa15}
+
+.mydd dd {
+	margin-left: 0;
+	margin-bottom: 0.25em;}
+
+
+.plugintitlemz { font-weight: bold;
+            text-decoration: none; 
+            font-style: italic;
+            font-size: 150%;
+            color: #d61b1a}
+
+.link {  text-decoration: none;  }
+
+.function {  text-decoration: none; 
+             font-style: italic; }
+
+.indexitem { text-decoration: none; }
+            
+-->
+</style>
+</head>
+</head>
+
+
+<body bgcolor=#ffffff alink=#339933 link=#339933 vlink=#339933 text=#220000>
+<!-- header *************************************************** -->
+
+<center>
+<table width=760 cellpadding=0 cellspacing=0 border=0>
+<tr valign=top>
+<td>
+   <a href=http://www.charm.rhul.ac.uk><img alt="" border=0 src=../images/logo.gif></a>
+</td>
+<td>
+   <a href=http://mazurka.org.uk><img alt="" border=0 src=../images/banner.gif></a>
+</td>
+</tr>
+</table>
+<center>
+
+
+<!-- ------------------------------------------------------------- -->
+
+
+<center>
+<table width=600>
+<tr><td>
+
+<center>
+<table width=731 cellspacing=0 cellpadding=0>
+<tr width=731 height=78 valign=bottom><td width=231><a href=http://sv.mazurka.org.uk><img src=../img/svmazurkaplugin.png alt="SV Mazurka Plugin:" border=0></a></td>
+<td width=500 height=90><table cellpadding=0 cellspacing=0 width=500 height=90><tr height=73><td valign=bottom><center><span class=plugintitlemz><sub>Mz</sub></span><span class=plugintitlesv>Chronogram</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</center></td></tr>
+<tr height=5><td></td></tr>
+<tr height=12><td><img src=../img/svpluginline.png alt="" border=0></td></tr></table>
+</td></tr></table>
+</center>
+<p>
+
+
+<font color=#bb9966><h3><i>SYNOPSIS</i></h3></font>
+<ul><b><small><small><i>Mz</i></small></small>Chronogram</b> -- Time-domain analogy to spectrograms. 
+</ul>
+<ul>
+The <small><small><i>Mz</i></small></small>Chronogram plugin displays a time-domain signal in  two dimensions as if
+ it were a set of frequency frames in a spectrogram.  The time sequence
+ runs from top to bottom, from left to right.  Stable periodic
+ sounds generate displays of parallel lines with the line slope dependent 
+ on the frequencies of the sinewaves.
+ 
+ 
+
+</ul>
+
+<a name=options></a>
+<img vspace=10 hspace=10 src=img/MzChronogram-parameters.png border=0 align=right>
+
+<font color=#bb9966><h3><i>INPUT PARAMETERS</i></h3></font>
+<ul><small><small><i>Mz</i></small></small>Chronogram accepts 6 input parameters:<p>
+<dl class=mydd>
+<dt>1. <i><b><font color=#bb9966>Vertical period</font></b></i>
+<dd><ul><span class=noindent>The pixel height of each channel in terms of 
+ 		the number of audio samples to display in each data column.
+ 
+</span></ul>
+
+<dt>2. <i><b><font color=#bb9966>Frequency</font></b></i>
+<dd><ul><span class=noindent>The height of each channel display in terms of a frequency
+ 		(inverse of period).  If this value is changed from its default
+ 		setting, then the plugin will use this value instead of the 
+ 		<i>vertical period</i> parameter.
+ 
+</span></ul>
+
+<dt>3. <i><b><font color=#bb9966>Chroma</font></b></i>
+<dd><ul><span class=noindent>The pitch-class for a frequency height specification.
+   		If the chroma is set to a value other than "none",
+ 		then the vertical period will be calculated from the
+ 		fundamental frequency of the specified pitch-class
+ 		at the given octave (overriding both the 
+ 		<i>vertical period</i>
+ 		and <i>frequency</i> parameters).
+ 
+</span></ul>
+
+<dt>4. <i><b><font color=#bb9966>Octave</font></b></i>
+<dd><ul><span class=noindent>Used in conjunction with the 
+ 		<i>chroma</i> parameter.
+ 		Octave 4 is the octave of middle C (C4).
+ 		Frequencies are calculated from the chroma/octave
+ 		values using equal-temperament with A4=440 Hz.
+ 
+</span></ul>
+
+<dt>5. <i><b><font color=#bb9966>Channel view</font></b></i>
+<dd><ul><span class=noindent>By default, all audio channels will be displayed in the
+ 		chronogram.  You can also use this parameter to display
+ 		only the left channel, right channel or the stereo difference.
+ 		
+ 
+</span></ul>
+
+<dt>6. <i><b><font color=#bb9966>Sensitivity</font></b></i>
+<dd><ul><span class=noindent>A parameter which controls the contrast between low
+ 		amplitude and high amplitude parts of the audio data.
+ 		
+ 
+ 
+</span></ul>
+
+</dl>
+</ul>
+<a name=description></a>
+
+<font color=#bb9966><h3><i>DESCRIPTION</i></h3></font>
+<ul> 
+ <p>
+ 
+ The following diagram demonstrates how the sound samples are
+ filled into a two-dimensional grid in the chronographic display.   The audio
+ is split up into frames equal to the number of rows in the chronogram.
+ Then the frame column is filled with audio sample data 
+ from the top to the bottom of the column.  In Sonic Visualiser, the
+ chronogram columns line-up exactly with the corresponding display
+ of the audio waveform.
+ 
+ <p>
+ <center>
+ <img src=img/chronogramsequence-small.png border=0>
+ </center>
+ 
+ <p> When a sound contains a period which is an exact multiple of the
+ vertical period of the chronographic display, that sound will be displayed
+ as horizontal lines on the display as shown in the figure below.  In this
+ example, there is a sinewave oscillator which plays 43 Hz for one second,
+ then sweeps up to 5 * 43 = 215 Hz and stays there for one second, then
+ sweeps up to 10 * 43 = 430 Hz and stay there for one second.  In each
+ case where the frequency is a multiple of the sampling rate divided
+ by the vertical period of the chronographic display, horizontal lines will
+ be displayed.  The number of horizontal lines indicates the frequency
+ of the pitch.  For example, the middle of the picture where there are
+ 5 red bands indicates a frequency of 5 * 44100/1024 = 215 Hz.
+ 
+ <p> <center> <img src=img/sweep43-430.jpg border=0> <br><a class=link
+ href=sound/sweep43-430.mp4>Click here</a> to listen to the corresponding
+ sound.  </center>
+ 
+ <p>
+ Stable frequencies which are not multiples of the vertical period of the
+ chronogram will form parallel lines at various angles.  Lines which slope
+ upwards are slightly sharper than the horizontal frequency represented
+ by the number of vertical lines.  And likewise, falling slopes indicate
+ a flatter frequency.  The following example starts at 10 times the frame
+ frequency of 43 Hz, and then increases the pitch by 43/8 Hz until the
+ oscillator arrives at 11 times the frame frequency (count the number of
+ red lines at the right side of the picture).
+ 
+ 
+ <p>
+ <center>
+ <a href=img/eightfreq-large.jpg><img src=img/eightfreq-small.gif border=0></a>
+ <br><a class=link href=sound/eightfreq.mp4>Click here</a> to listen to the 
+ corresponding sound.
+ </center>
+ 
+ <p> For complex harmonic tones which contain more than one sinewave, the 
+ pitch of the tone at its fundamental frequency is visible as a slope
+ of parallel lines.  Each of the harmonics of the tone are on a similar
+ slope.  For example the first overtone occurs twice as often as the
+ fundamental frequency, so their periods match at 2:1.  Likewise, the
+ second overtone at an octave and a fifth above the fundamental
+ frequency has a ratio of 3:1 with the fundamental.  
+ 
+ <p> Notes which are considered consonant have similar slopes in the
+ lines for their pitches, while notes of dissonant intervals
+ will have dissimilar slopes.  Notice in the following example that
+ the notes "f", "a", and "c" which form a major triad all have the
+ same primary slope.  
+ 
+ 
+ <p>
+ <center>
+ <a href=sound/chromo.mp4><img src=img/chromo.gif border=0></a>
+ <br><a class=link href=sound/chromo.mp4>Click here</a> to listen to the 
+ corresponding sound.
+ </center>
+ 
+ <p>
+ Below is an example from a real performance.  The original
+ recording is in stereo, and the chronographic display will display
+ each channel of the signal on top of each other, with the left
+ channel above the right, as is done with the waveform display
+ in Sonic Visualiser.  In this example, you can see loud notes as
+ regions of high contrast in the chronographic display since the waveform
+ is oscillation between the extreme ranges of the display. Also,
+ the chronographic display is useful to view changes of pitch where
+ the amplitude of the waveform does not change significantly.  For example,
+ there is a low note played softly near the middle of the following
+ diagram.  The low note is visible in the chronogram as a region
+ of parallel lines which are fairly widely spaced.
+ 
+ <p>
+ <center>
+ <img src=img/realchronogram.png border=0>
+ </center>
+ 
+ <pre>
+ 
+ </pre>
+ 
+ <p>
+ <b>Sensitivity parameter</b>
+ 
+ 
+ <p> The <i>sensitivity</i> parameter control for <small><small><i>Mz</i></small></small>Chronogram
+ is used to enhance visibility in quiet regions of audio.
+ Normally when display a region which has low amplitude, the
+ color of the display will have a low contrast since the 
+ colorization of the display also takes into account loud
+ sections of the audio.  However, the <i>sensitivity</i>
+ parameter enhances the quiet regions of the audio so
+ that pitch banding is more visible as demonstrated
+ in the following figure.
+ 
+ <p>
+ <center>
+ <img src=img/chronogram-sensitivity.png border=0>
+ </center>
+ 
+ <p>
+ Here is a plot of the sensitivity mapping which is used.
+ When the sensitivity is set to 0.00, the waveform amplitudes
+ are unchanged.  As the sensitivity factor is raised to 1.0, 
+ low amplitude values are increased, while high amplitude
+ values stay (mostly) the same.
+ 
+ <p>
+ <center>
+ <img src=img/chronogram-amplitude-mapping.png border=0>
+ </center>
+ 
+ 
+
+</ul>
+<a name=limitations></a>
+
+<font color=#bb9966><h3><i>LIMITATIONS</i></h3></font>
+<ul>Currently only allows for integer periods, so not	 	all frequencies can be represented as horizontal lines.  
+ 	Will add a non-integer correction factor sometime in the
+ 	future...
+ 
+
+</ul>
+<a name=bugs></a>
+
+<a name=download></a>
+
+<font color=#bb9966><h3><i>DOWNLOAD</i></h3></font>
+<ul>
+Compiled versions of the <small><small><i>Mz</i></small></small>Chronogram plugin can
+be downloaded from the <a class=link href=../download>download page</a>.<p> The source code for the plugin was last modified on 25 May 2006.<ul><li><i>Header:</i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ <a class=link href=src/MzChronogram.h.html>html</a> | <a class=link href=src/MzChronogram.h.pdf>PDF</a> | <a class=link href=src/MzChronogram.h>text</a> ] <li><i>Source Code:</i> [ <a class=link href=src/MzChronogram.cpp.html>html</a> | <a class=link href=src/MzChronogram.cpp.pdf>PDF</a> | <a class=link href=src/MzChronogram.cpp>text</a> ] </ul>
+</ul>
+<a name=seealso></a>
+
+<a name=allusions></a>
+
+
+<pre>
+
+
+
+</pre>
+</td></tr>
+</table>
+</center>
+
+</body>
+</html>
+

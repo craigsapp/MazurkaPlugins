@@ -1,0 +1,130 @@
+<!---------------------------------------------------------------------------->
+<html>
+<head>
+<title> Sig++ example program: MzPowerCurve.h </title>
+<meta name="Document-Owner" content="Craig Sapp (craig@ccrma.stanford.edu)"> 
+<meta name="Author" content="Craig Stuart Sapp (craig@ccrma.stanford.edu)">
+<meta name="Creation-Date" content=" Tue May  9 19:38:11 PDT 2000 ">
+<meta name="Revision-Date" content=" Wed Dec 27 07:42:41 PST 2006
+ ">
+</head>
+
+<body bgcolor=#ffffff alink=#333399 link=#333399 vlink=#333399 text=#220000>
+<!-- header *************************************************** -->
+
+<center>
+<table width=760 cellpadding=0 cellspacing=0 border=0>
+<tr valign=top>
+<td>
+   <a href=http://www.charm.rhul.ac.uk><img alt="" border=0 src=../../images/logo.gif></a>
+</td>
+<td>
+   <a href=http://mazurka.org.uk><img alt="" border=0 src=../../images/banner.gif></a>
+</td>
+</tr>
+</table>
+</center>
+
+<center>
+<table><tr><td>
+
+
+<pre>
+<font color=#229933>//</font>
+<font color=#229933>// Programmer:    Craig Stuart Sapp &lt;craig@ccrma.stanford.edu&gt;</font>
+<font color=#229933>// Creation Date: Sat May 13 12:16:45 PDT 2006</font>
+<font color=#229933>// Last Modified: Sat May 20 15:50:06 PDT 2006 (parameters control added)</font>
+<font color=#229933>// Filename:      MzPowerCurve.h</font>
+<font color=#229933>// URL:           <a href=http://sv.mazurka.org.uk/include/MzPowerCurve.h>http://sv.mazurka.org.uk/include/MzPowerCurve.h</a></font>
+<font color=#229933>// Documentation: <a href=http://sv.mazurka.org.uk/MzPowerCurve>http://sv.mazurka.org.uk/MzPowerCurve</a></font>
+<font color=#229933>// Syntax:        ANSI99 C++; vamp 0.9 plugin</font>
+<font color=#229933>//</font>
+<font color=#229933>// Description:   Calculate the power of an audio signal as it changes </font>
+<font color=#229933>//                over time.</font>
+<font color=#229933>// </font>
+
+<font color=#cccccc>#ifndef _MZPOWERCURVE_H_INCLUDED</font>
+<font color=#cccccc>#define _MZPOWERCURVE_H_INCLUDED</font>
+
+#include "MazurkaPlugin.h"  <font color=#229933>// Mazurka plugin interface for Sonic Visualiser</font>
+#include "MazurkaWindower.h"
+
+#include &lt;list&gt;
+
+
+class MzPowerCurve : public MazurkaPlugin {
+
+   public: 
+
+   <font color=#229933>// plugin interface functions:</font>
+
+                    MzPowerCurve            (float samplerate);
+      virtual      ~MzPowerCurve            ();
+
+      <font color=#229933>// required polymorphic functions inherited from PluginBase:</font>
+      std::string   getName                 (void) const;
+      std::string   getMaker                (void) const;
+      std::string   getCopyright            (void) const;
+      std::string   getDescription          (void) const;
+      int           getPluginVersion        (void) const;
+
+      <font color=#229933>// optional parameter interface functions</font>
+      ParameterList getParameterDescriptors (void) const;
+
+      <font color=#229933>// required polymorphic functions inherited from Plugin:</font>
+      InputDomain   getInputDomain          (void) const;
+      OutputList    getOutputDescriptors    (void) const;
+      bool          initialise              (size_t channels, 
+                                             size_t stepsize, 
+                                             size_t blocksize);
+      FeatureSet    process                 (float **inputbufs, 
+                                             Vamp::RealTime timestamp);
+      FeatureSet    getRemainingFeatures    (void);
+      void          reset                   (void);
+
+      <font color=#229933>// optional polymorphic functions from Plugin:</font>
+      size_t        getPreferredStepSize    (void) const;
+      size_t        getPreferredBlockSize   (void) const;
+      <font color=#229933>// size_t     getMinChannelCount      (void) const { return 1; }</font>
+      <font color=#229933>// size_t     getMaxChannelCount      (void) const { return 1; }</font>
+
+   <font color=#229933>// non-interface functions and variables:</font>
+   
+      static double getStandardDeviation    (std::vector&lt;double&gt;& data);
+      static double getMean                 (std::vector&lt;double&gt;& data);
+
+   private: 
+
+      int mz_filterforward;         <font color=#229933>// true if forward filtering</font>
+      int mz_filterbackward;        <font color=#229933>// true if reverse filtering</font>
+
+      MazurkaWindower mz_window;    <font color=#229933>// used for weighted averaging</font>
+      double          mz_windowsum; <font color=#229933>// for normalization of weighted power</font>
+      std::vector&lt;double&gt; rawpower; <font color=#229933>// power data for non-causal calculations</font>
+
+   <font color=#229933>// plugin parameters:</font>
+   <font color=#229933>//    "windowsize"         -- size of the analysis window in milliseconds</font>
+   <font color=#229933>//    "hopsize"            -- distance between window start times in ms</font>
+   <font color=#229933>//    "smoothingfactor"    -- gain value for exponential smoothing filter</font>
+   <font color=#229933>//    "filtermethod"       -- which way to filter raw power</font>
+   <font color=#229933>//    "cutoffthreshold"    -- noise floor in dB</font>
+   <font color=#229933>//    "cutoffwidth"        -- transition region around threshold in dB</font>
+
+};
+
+
+<font color=#cccccc>#endif <font color=#229933>// _MZPOWERCURVE_H_INCLUDED</font></font>
+
+</pre>
+
+
+</td></tr>
+</table>
+</center>
+
+
+
+
+</body>
+</html>
+   

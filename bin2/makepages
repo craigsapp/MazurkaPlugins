@@ -1,0 +1,74 @@
+#!/usr/bin/perl
+#
+# Programmer:    Craig Stuart Sapp <craig@ccrma.stanford.edu>
+# Creation Date: Fri Mar 11 23:29:43 PST 2005
+# Last Modified: Fri Mar 11 23:29:43 PST 2005
+# Filename:      /disk/data2/craigsites/humdrum/extras/web/man/bin/makepages
+# Syntax:        perl 5
+#
+# Description:
+#
+
+
+use strict;
+
+my $basedir = $ARGV[0];
+my $directory = $ARGV[1];
+
+
+opendir (CDIR, $basedir) || die;
+my $file;
+
+
+if ($directory =~ /^\s*$/) {
+    while ($file = readdir(CDIR)) {
+       next if $file =~ /^\./;
+       next if !-d "$basedir/$file";
+       next if !-r "$basedir/$file/index.dat";
+       createIndex("$basedir/$file", $file);
+    }
+    closedir(CDIR);
+} else {
+   createIndex("$basedir/$directory");
+}
+
+exit(0);
+
+
+##########################################################################
+
+##############################
+##
+## createIndex --
+##
+
+sub createIndex {
+   my ($dir, $pluginname) = @_;
+
+   if ($pluginname =~ /^\s*$/) {
+      if ($dir  =~ /(Mz[A-Za-z0-9]+)/) {
+         $pluginname = $1;
+      } else {
+         print "Cannot identify plugin name in $dir\n";
+         die;
+      }
+   }
+ 
+   print "Making file $dir/index.html\n";
+   `$basedir/bin/makepluginindex $basedir/template.html $dir`;
+
+
+   # make the html version of the source code
+   `(cd $basedir/$dir; make htmlcode)`;
+
+   if (-r "$dir/src/$pluginname.cpp") {
+      `$basedir/bin/codecommentary $dir/src/$pluginname.cpp > $dir/src/$pluginname.cpp.html`;
+   }
+
+   if (-r "$dir/src/$pluginname.h") {
+      `$basedir/bin/codecommentary $dir/src/$pluginname.h > $dir/src/$pluginname.h.html`;
+   }
+
+}
+
+

@@ -1,0 +1,727 @@
+<!---------------------------------------------------------------------------->
+<html>
+<head>
+<title> Manpage for SV Mazurka Plugin: MzSpectralFlux</title>
+<meta name="Document-Owner" content="Craig Sapp (craig@ccrma.stanford.edu)"> 
+<meta name="Author" content="Craig Stuart Sapp (craig@ccrma.stanford.edu)">
+<meta name="Creation-Date" content=" Wed Mar  9 15:11:34 PST 2005 ">
+<meta name="Revision-Date" content=" Wed Mar  9 15:11:34 PST 2005 ">
+<style type="text/css">
+<!-- 
+.pluginname { font-weight: bold;
+            text-decoration: none; 
+            font-size: 125%;
+            color: #116611}
+
+.plugintitlesv { font-weight: bold;
+            text-decoration: none; 
+            font-size: 200%;
+            color: #2faa15}
+
+.mydd dd {
+	margin-left: 0;
+	margin-bottom: 0.25em;}
+
+.hanging { text-indent: -40px; }
+
+.plain { text-decoration: none; }
+
+
+.plugintitlemz { font-weight: bold;
+            text-decoration: none; 
+            font-style: italic;
+            font-size: 150%;
+            color: #d61b1a}
+
+.link {  text-decoration: none;  }
+
+.function {  text-decoration: none; 
+             font-style: italic; }
+
+.indexitem { text-decoration: none; }
+            
+-->
+</style>
+</head>
+</head>
+
+
+<body bgcolor=#ffffff alink=#339933 link=#339933 vlink=#339933 text=#220000>
+<!-- header *************************************************** -->
+
+<center>
+<table width=760 cellpadding=0 cellspacing=0 border=0>
+<tr valign=top>
+<td>
+   <a href=http://www.charm.rhul.ac.uk><img alt="" border=0 src=../images/logo.gif></a>
+</td>
+<td>
+   <a href=http://mazurka.org.uk><img alt="" border=0 src=../images/banner.gif></a>
+</td>
+</tr>
+</table>
+<center>
+
+
+<!-- ------------------------------------------------------------- -->
+
+
+<center>
+<table width=600>
+<tr><td>
+
+<center>
+<table width=731 cellspacing=0 cellpadding=0>
+<tr width=731 height=78 valign=bottom><td width=231><a href=http://sv.mazurka.org.uk><img src=../img/svmazurkaplugin.png alt="SV Mazurka Plugin:" border=0></a></td>
+<td width=500 height=90><table cellpadding=0 cellspacing=0 width=500 height=90><tr height=73><td valign=bottom><center><span class=plugintitlemz><sub>Mz</sub></span><span class=plugintitlesv>SpectralFlux</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</center></td></tr>
+<tr height=5><td></td></tr>
+<tr height=12><td><img src=../img/svpluginline.png alt="" border=0></td></tr></table>
+</td></tr></table>
+</center>
+<p>
+
+
+<font color=#bb9966><h3><i>SYNOPSIS</i></h3></font>
+<ul><b><small><small><i>Mz</i></small></small>SpectralFlux</b> -- Estimates note onsets from changes in spectral magnitudes. 
+</ul>
+<ul>
+Spectral flux is a measurement of the change in magnitude between frames in a spectrogram.  This plugin calculates estimated 
+ note onsets from spectral flux and also demonstrates the various
+ steps taken to calculate the spectral flux and derived onset times.
+ 
+
+</ul>
+
+<a name=options></a>
+<img vspace=10 hspace=10 src=img/MzSpectralFlux-parameters.png border=0 align=right>
+
+<font color=#bb9966><h3><i>INPUT PARAMETERS</i></h3></font>
+<ul><small><small><i>Mz</i></small></small>SpectralFlux accepts 8 input parameters:<p>
+<dl class=mydd>
+<dt>1. <i><b><font color=#bb9966>Window Size</font></b></i>
+<dd><ul><span class=noindent>The size of the audio analysis window in samples for 
+ 		calculating underlying spectra.  Window sizes under 
+ 		1024 samples do not seem to be useful for calculating 
+ 		the spectral flux.  Larger window sizes do seem to 
+ 		reduce some noise due to beating of partials in 
+ 		pitched music.
+ 
+</span></ul>
+
+<dt>2. <i><b><font color=#bb9966>Step Size</font></b></i>
+<dd><ul><span class=noindent>The number of samples between analysis window starting
+ 		points.  The peak-finding algorithm is currently optimized
+ 		to a step size of 10 milliseconds which corresponds
+ 		to 441 samples when the sampling rate is 44100 Hz.
+ 		Probably not useful to alter this value since some of the
+ 		peak finding parameters are not yet adjustable by the user.
+ 
+</span></ul>
+
+<dt>3. <i><b><font color=#bb9966>Flux Type</font></b></i>
+<dd><ul><span class=noindent>How to process the spectral difference values to generate 
+ 		a flux value:
+  		<ul>
+ 		<li> "Total Flux" = use all spectral bin slopes.
+ 		<li> "Positive Flux" = set all negative bin slopes to zero.
+ 		<li> "Negative Flux" = set all positive bin slopes to zero.
+ 		<li> "Difference Flux" =  non-negative positive minus negative
+  			flux values.
+ 		<li> "Composite Flux" = a commixture of the first three flux 
+ 			types: (positive - negative) / (|total - positive|).
+ 		</ul>
+ 
+</span></ul>
+
+<dt>4. <i><b><font color=#bb9966>Spectral Smoothing</font></b></i>
+<dd><ul><span class=noindent>The amount of smoothing applied to the spectral frames
+ 		before the spectral difference is calculated.  0.0 = no
+ 		smoothing, 1.0 == infinite smoothing.  A value of 0.99 
+ 		usually works very well.
+ 
+</span></ul>
+
+<dt>5. <i><b><font color=#bb9966>Norm Order</font></b></i>
+<dd><ul><span class=noindent>The <i>p</i>-value for calculating the norm of the spectral 
+ 		difference vector.  
+ 
+ <img src=img-latexeqn/pnormdef.png align=right vspace=5 hspace=5 border=0>
+ <!--
+ <div class=latexeqn name=pnormdef imgopts="align=right vspace=5 hspace=5" size=+0>
+ \left| x \right|_p \equiv \left( \sum_i \left|x_i\right|^p \right)^{1/p}
+ </div>
+ -->
+ 
+ 
+ 		Using <i>p</i>=1 generally gives the best results,
+ 		but you can try various values to see for yourself.
+ 		Try a 
+                 <i>p</i>-value of 1.5, for example.  
+ 
+ 		On the right is 
+ 		the mathematical definition for the norm which is 
+ 		used in this plugin, where <i>p</i> is this input parameter
+ 		and <i>x</i><sub><i>i</i></sub> are the spectral difference
+ 		values.
+ 
+ 
+</span></ul>
+
+<dt>6. <i><b><font color=#bb9966>Magnitude Spectrum</font></b></i>
+<dd><ul><span class=noindent>What type of basis spectrum to use for calculating
+ 		the spectral slope data.  
+ 
+</span></ul>
+
+<dt>7. <i><b><font color=#bb9966>Local Mean Threshold</font></b></i>
+<dd><ul><span class=noindent>Used for calculating onset times from the scaled spectral flux
+ 		function.  This is the value above the local maximum
+ 		of the scaled spectral flux function which a value must
+ 		achieve in order to be considered a peak.  If you have
+ 		too many false positive onsets, increase this value;
+ 		if you have too many false negatives (missing real onsets),
+ 		decrease this value.
+ 
+</span></ul>
+
+<dt>8. <i><b><font color=#bb9966>Exponential Decay Factor</font></b></i>
+<dd><ul><span class=noindent>Used for calculating onset times from the scaled spectral
+ 		flux function.  This is the feedback gain for an 
+ 		exponentially decaying function based on the scaled
+ 		spectral flux function.  Scaled flux values which
+ 		are below the exponential decay function are not 
+ 		considered when searching for peaks.  If you have too 
+ 		many false positive onsets, increase this value; if you 
+ 		have too many false negatives (missing real onsets), 
+ 		decrease this value.  
+ 
+ 
+</span></ul>
+
+</dl>
+</ul>
+<font color=#bb9966><h3><i>OUTPUTS</i></h3></font>
+<ul><small><small><i>Mz</i></small></small>SpectralFlux generates 6 outputs:<p>
+<dl class=mydd>
+<dt>1. <i><b><font color=#bb9966>Underlying Spectrogram</font></b></i>
+<dd><ul><span class=noindent>A spectrogram of the underlying spectral data used to calculate
+ 	the spectral slope and spectral flux values.
+ 
+</span></ul>
+
+<dt>2. <i><b><font color=#bb9966>Spectral Derivative</font></b></i>
+<dd><ul><span class=noindent>A spectrogram displaying the differences between successive
+ 	spectra (output #1).  The slope are also processed with
+ 	according to the "Slope Selectivity" input parameter.
+ 	Values in the output are normalized for the visual display
+ 	enhancement
+ 	(but not normalized when calculating the spectral flux values).
+ 
+ 
+</span></ul>
+
+<dt>3. <i><b><font color=#bb9966>Raw Spectral Flux Function</font></b></i>
+<dd><ul><span class=noindent>The basic spectral flux calculated from differences
+ 	between successive spectral frames.  This is the starting
+ 	data for calculating onset times.
+ 
+</span></ul>
+
+<dt>4. <i><b><font color=#bb9966>Scaled Spectral Flux Function</font></b></i>
+<dd><ul><span class=noindent>The same thing as output #3, but the mean (average) value of the
+ 	points in this function is shifted zero, and the values are
+ 	also scaled so that the standard deviation of the function is
+ 	1.0.  This makes the function more amenable to comparisons 
+ 	between different function generation methods, and well as 
+ 	for post processing with a peak selection algorithm.
+ 
+</span></ul>
+
+<dt>5. <i><b><font color=#bb9966>Exponential Decay Threshold</font></b></i>
+<dd><ul><span class=noindent>Underlying data used in identifying peaks in the scaled
+ 	spectral flux function.  These values are generated by 
+ 	sending the scaled spectral flux function through an
+ 	exponential smoothing function to suppress noise in the
+ 	data after in initial onset (noise usually due to 
+ 	beating partials).  The input parameter "Exponential Decay Factor"
+ 	is used to calculate the rate of decay after a note attack.
+ 
+</span></ul>
+
+<dt>6. <i><b><font color=#bb9966>Local Mean Threshold</font></b></i>
+<dd><ul><span class=noindent>Also used to calculate peaks in the scaled spectral flux
+ 	function.  These values are generated from averaging
+         in a limited local area on the spectral flux function and
+         then adding an extra offset parameter set by the user
+         as input to the plugin.
+ 
+ 
+</span></ul>
+
+</dl>
+</ul>
+<a name=description></a>
+
+<font color=#bb9966><h3><i>DESCRIPTION</i></h3></font>
+<ul> 
+ 
+ <h2>Spectral flux<hr noshade></h2>
+ 
+ Spectral flux is a measure of the change in energy between
+ various frequency bands in a sequence of spectra measured 
+ from the audio data.  
+ 
+ <p> Spectral flux is calculated in three steps:
+ 
+ <ol>
+ <li> Calculate a sequence of spectra.
+ <li> Measure the difference between successive spectral bins.
+ <li> Collapse the spectral difference of selected bins (from #2) into a 
+      single spectral flux value.
+ </ol>
+ 
+ <p> The resulting spectral flux function can then be used to identify
+ onset times for notes in the audio data by searching for peaks
+ in the spectral flux function.
+ 
+ <p>  Here are some of the example steps in calculating the 
+ spectral flux function.  The following figure contains the
+ original waveform in orange.  Underneath the waveform is the
+ corresponding spectral flux function in green.  And underneath
+ the spectral flux function is a display of step #2 in calculating
+ the spectral flux function -- the difference spectrogram.
+ 
+ 
+ <p>
+ <center>
+ <img src=img/spectraldifference.png>
+ </center>
+ 
+ <h2>  Flux variants <hr noshade></h2>
+ 
+ <p> Spectral flux is defined most simply as the Euclidean
+ distance between successive spectral frames:
+ 
+ <center>
+ <img src=img-latexeqn/spectralflux.png  border=0>
+ <!--
+ <div id=latexeqn name=spectralflux size=+1>
+ \mbox{SF}(n) & = & \left| X_k(n) - X_k(n-1) \right|_2 \\
+    & =  & \left( \sum_k |X(n,k) - X(n-1,k)|^2 \right)^{1/2}
+ </div>
+ -->
+ 
+ </center>
+ 
+ <p> This form of spectral flux is a bit noisy due to the
+ equal emphasis on rising and falling spectral energy.  If you
+ want to locate <i>note onsets</i>, then you should instead
+ look at only the positive values in the spectral difference:
+ 
+ <center>
+ <img src=img-latexeqn/positivespectralflux.png  border=0>
+ <!--
+ <div id=latexeqn name=positivespectralflux size=+1>
+ \mbox{SF}^{+}(n)  =  \left| H^{+}[X_k(n) - X_k(n-1)] \right|_2 
+ </div>
+ -->
+ 
+ </center>
+ Where  <i>H</i><sup>+</sup>(<i>x</i>) = (<i>x</i> + |<i>x</i>|)/2
+ is the positive half-wave rectifying function which sets negative
+ values to zero, and leaves positive values unaltered.
+ 
+ <p> There is also negative spectral flux which is usually not
+ interesting by itself:
+ 
+ <center>
+ <img src=img-latexeqn/positivespectralflux-2.png  border=0>
+ <!--
+ <div id=latexeqn name=positivespectralflux size=+1>
+ \mbox{SF}^{-}(n)  =  \left| H^{-}[X_k(n) - X_k(n-1)] \right|_2 
+ </div>
+ -->
+ 
+ </center>
+ 
+ where  <i>H</i><sup><tt>-</tt></sup>(<i>x</i>) = (<i>x</i> <tt>-</tt> |<i>x</i>|)/2
+ is the negative half-wave rectifying function which sets all positive
+ values to zero and leaves negative values unaffected.
+ 
+ <p> Note that SF<sup>+</sup>(<i>n</i>)  + SF<sup><tt>-</tt></sup>(<i>n</i>) = SF(<i>n</i>).  This is sometimes interesting to consider, so give it
+ the name <i> difference flux</i>:
+ <center>
+ <img src=img-latexeqn/differenceflux.png  border=0>
+ <!--
+ <div id=latexeqn name=differenceflux size=+1>
+ \mbox{SF}^{\Delta}(n)  =   \mbox{SF}^{+}(n) - \mbox{SF}^{-}(n)
+ </div>
+ -->
+ 
+ </center>
+ 
+ <p> Usually it is best if you limit values of SF<sup>&Delta;</sup> to
+ non-negative values by setting the negative values to zero:
+ 
+ <center>
+ <img src=img-latexeqn/differenceflux2.png  border=0>
+ <!--
+ <div id=latexeqn name=differenceflux2 size=+1>
+ \mbox{SF}^{\Delta +}(n)  =  H^{+}[\mbox{SF}^{+}(n) - \mbox{SF}^{-}(n)]
+ </div>
+ -->
+ 
+ </center>
+ 
+ <p>
+ And finally, consider the <i>composite flux</i> which is defined as:
+  
+ <center>
+ <img src=img-latexeqn/compositeflux.png  border=0>
+ <!--
+ <div id=latexeqn name=compositeflux size=+1>
+ \mbox{SF}^{c}  =   \frac{\mbox{SF}^{\Delta +}}{|\mbox{SF}-\mbox{SF}^{+}|}
+ </div>
+ -->
+ 
+ </center>
+ 
+ <p>
+ This form of spectral flux may be interesting, but is difficult to 
+ extract peaks in the same manner as the other types of spectral flux. 
+ 
+ 
+ <p>Here are visual examples of the first four types of flux.  The
+ black curve represents the total flux, the green curve the positive
+ flux, the red curve the negative flux and the blue curve the
+ difference flux. 
+ 
+ <p>
+ <center>
+ <img src=img/fluxtypesexample.png>
+ </center>
+ 
+ 
+ 
+ <pre>
+ 
+ 
+ </pre>
+ <h3> correlation spectral flux <hr noshade></h3>
+ 
+ <p> Instead of subtracting adjacent spectral frames to
+ derive a spectral flux value, the change in correlation between
+ three successive spectral frames can be compared:
+ 
+ <center>
+ <img src=img-latexeqn/productflux.png  border=0>
+ <!--
+ <div id=latexeqn name=productflux size=+1>
+ \mbox{SF}^{*}(n)  &=&   \log\left[X_k(n) \cdot X_k(n-1)\right] - \log\left[X_k(n-1) \cdot X_k(n-2)\right] \\
+ &=& \log\left[  \frac{X_k(n) \cdot X_k(n-1)}{X_k(n-1) \cdot X_k(n-2)} \right]
+ </div>
+ -->
+ 
+ </center>
+ Where:
+ <center>
+ <img src=img-latexeqn/dotproduct.png  border=0>
+ <!--
+ <div id=latexeqn name=dotproduct size=+1>
+ X_k(n) \cdot X_k(m) \equiv \sum_k X(n,k) X(m,k)
+ </div>
+ -->
+ 
+ </center>
+ is called the dot product, or alternatively unnormalized correlation.
+ Taking the logarithm of the dot product calculations is necessary to have
+ the spectral flux analygous in range to the standard flux definitions
+ which subtract adjacent spectra rather than multiply spectra together.
+ 
+ <p> This method of calculating spectral flux shows potential, but 
+ needs some fine-tuning.
+ 
+ 
+ <pre>
+ 
+ </pre>
+ <h3> angular spectral flux<hr noshade></h3>
+ 
+ The dot product can also be defined as:
+ <center>
+ <img src=img-latexeqn/dotproductdef.png  border=0>
+ <!--
+ <div id=latexeqn name=dotproductdef size=+1>
+ a \cdot b = |a|\, |b| \, \cos \theta
+ </div>
+ -->
+ 
+ </center>
+ 
+ It is interesting to look at changes in the angle in isolation 
+ rather than changes in the correlation which is a mixture of 
+ the angular and magnitude changes.
+ 
+ <center>
+ <img src=img-latexeqn/anglularflux.png  border=0>
+ <!--
+ <div id=latexeqn name=anglularflux size=+1>
+ \mbox{SF}^{\theta}(n) =  \arccos \left[ \frac{X_k(n) \cdot X_k(n-1)}
+    {|X_k(n)| |X_k(n-1)| } \right]
+ </div>
+ -->
+ 
+ </center>
+ 
+ Angular spectral flux is also related to subtractive spectral
+ flux as illustrated in the following figure.  The current spectral
+ frame can be considered a vector (colored black in the example) as
+ well as the previous spectrum (colored green in the example).  
+ The standard definition of spectral flux looks at the changes in the
+ difference between the two spectra which is equivalent to the 
+ vector pointing from the previous spectrum to the current spectrum
+ (colored in blue).
+ 
+ <p>
+ <center>
+ <img src=img/geometricinterpretation.png>
+ </center>
+ 
+ 
+ 
+ <p> Angular flux shows promise, but gives too many false positives
+ in its basic form, and would need to be refined to make it useable
+ for detecting note onsets.  Problems to consider: phase wrapping
+ might be causing lots of the noise in this method.
+ 
+ 
+ <p> Slightly better peak-to-noise behavior occurs when just
+ using the raw cosine of the angle between the two spectra:
+ 
+ 
+ <center>
+ <img src=img-latexeqn/cosineflux.png  border=0>
+ <!--
+ <div id=latexeqn name=cosineflux size=+1>
+  - \mbox{SF}^{\cos \theta}(n) =  \frac{X_k(n) \cdot X_k(n-1)}
+    {|X_k(n)| |X_k(n-1)| } 
+ </div>
+ -->
+ 
+ </center>
+ 
+ <p>
+ (don't know why the negative sign is needed, but it is).
+ Both the angular flux and the cosine flux can generate weird
+ oscillations occasionally during a sustained tone.  Fix that
+ problem and they might be useful measures of note onsets...
+ 
+ 
+ <pre>
+ 
+ </pre>
+ <h2> L-norm  selection <hr noshade></h2>
+ 
+ 
+ <p> The Euclidean distance used in the previous section definitions
+ of spectral flux is usually not the best method of collapsing the
+ spectral difference values into a single number.  In general
+ it is better to just sum the spectral difference values together
+ rather than square each one, then add, then take the square root
+ of the sum:
+ 
+ <center>
+ <img src=img-latexeqn/spectralfluxsum.png  border=0>
+ <!--
+ <div id=latexeqn name=spectralfluxsum size=+1>
+ \mbox{SF}_1(n) & = & \left| X_k(n) - X_k(n-1) \right|_1 \\
+    & =  & \sum_k |X(n,k) - X(n-1,k)|
+ </div>
+ -->
+ 
+ </center>
+ 
+ <p> In engineering terms, the Euclidean distance is called the
+ L-2 norm, and summation is the L-1 norm, where the norm is
+ defined by the following equation:
+ 
+ <center>
+ <img src=img-latexeqn/pnormdef2.png  border=0>
+ <!--
+ <div class=latexeqn name=pnormdef2 size=+1>
+ \left| x \right|_p \equiv \left( \sum_i \left|x_i\right|^p \right)^{1/p}
+ </div>
+ -->
+ 
+ </center>
+ 
+ where <i>x</i><sub><i>i</i></sub> is a sequence of numbers to norm, and
+ <i>p</i> is the norm level.  For Euclidean distance, or L-2 norm, <i>p</i>=2.
+ For summation, or L-1 norm, <i>p</i> is 1.  A generalized equation 
+ for the spectral flux using any possible norm would then be:
+ 
+ <center>
+ <img src=img-latexeqn/spectralfluxsum-2.png  border=0>
+ <!--
+ <div id=latexeqn name=spectralfluxsum size=+1>
+ \mbox{SF}_p(n) & = & \left| X_k(n) - X_k(n-1) \right|_p \\
+    & =  & \left( \sum_k |X(n,k) - X(n-1,k)|^p \right)^{1/p}
+ </div>
+ -->
+ 
+ </center>
+ 
+ 
+ 
+ 
+ <p> In general, the smaller the value of <i>p</i> in the above
+ equation, the better the peak behavior in the spectral flux function.
+ In the following example, the <i>p</i> value is varied to display
+ the differences in the scaled spectral flux function. 
+ 
+ 
+ <p>
+ <center>
+ <img src=img/normlevel.png>
+ </center>
+ 
+ <p> Notice that lower values of <i>p</i> usually give better
+ resolution of the start of an attack, such as in the second
+ onset identified in the above example.  
+ 
+ 
+ 
+ <pre>
+ 
+ </pre>
+ <h2> Spectral smoothing <hr noshade> </h2>
+ 
+ <p>  Smoothing the spectral frames before calculating the 
+ spectral differences can help to remove noise in the spectral
+ flux function.  Usually a high amount of smoothing can remove
+ most false-positive detected onsets.    
+ 
+ <p> The following figure shows an example of the effect of 
+ smoothing on three attacks in a piano recording.  Five 
+ scaled spectral flux functions are displayed using the 
+ following smoothing factors: 0.0 (no smoothing), 0.5, 0.75, 0.9 and
+ 0.99.  Notice that the more smoothing that is applied to the
+ spectral frames, the higher the peak at the attack points
+ (purple vertical lines).  This allows for a higher local maximum
+ threshold (0.85 in this example) and also a higher exponential
+ decay value (0.95 in this case).
+ 
+ 
+ <p>
+ <center>
+ <img src=img/spectralsmoothing.jpg>
+ </center>
+ 
+ 
+ <p> Applying spectral smoothing is similar in effect to 
+ positive flux calculation.  The total flux and positive flux are
+ nearly identical with strong spectral smoothing.
+ 
+ 
+ <pre>
+ 
+ </pre>
+ <h2> Peak detection <hr noshade> </h2>
+ 
+ <p> To estimate note onset times in the spectral flux function,
+ three rules are applied to identify peaks in the spectral flux
+ function which are assumed to correspond to note onsets in the
+ audio:
+ 
+ <ol>
+ <li>  <i>Local maximum</i>: A value in the spectral flux function must 
+       be equal to the maximum value in the range of +/- 30 milliseconds
+       (+/- 3 values with a 10 millisecond frame rate).
+ <li> <i>Exponential decay threshold</i>: the test peak must not be
+      less than an exponential decay curve fitted to the spectral
+      flux function.  The exponential decay curve is defined as:
+      <tt>g[n] = max(f[n], a g[n-1] + (1-a) f[n])</tt>, where <tt>g[n]</tt>
+      is the threshold function, <tt>f[n]</tt> is the spectral flux function,
+     <tt>n</tt> is the time index, and <tt>a</tt> is the exponential decay
+      factor.
+ 
+ <li> <i>Local mean threshold</i>: the test peak must be greater
+      than the local mean plus an extra offset factor.  The local mean
+      is the average between -90 milliseconds and + 30 milliseconds.
+ </ol>
+ 
+ 
+ <p> The following example image shows the two threshold functions 
+ along with the spectral flux function and the detected onset peaks.
+ The spectral flux function is the thin blue line with the dots at
+ each measured point (10 milliseconds apart).  The local mean threshold
+ function is the lower solid curve colored in red.  The exponential 
+ decay threshold function is the upper solid curve colored in green.
+ Identified onset times are highlighted with purple vertical lines.
+ 
+ <p>
+ <center>
+ <img src=img/peakfinding.png>
+ </center>
+ 
+ <p> Note that there is a fairly large peak after the second onset.
+ While this peak does go above the local mean threshold, it does not
+ get as high as the exponential decay threshold.  Therefore it was not
+ identified as an onset peak.  Also note the small peak between
+ the first and second detected onsets.  While this peak contains
+ a local maximum, it neither rises above the local mean threshold nor
+ meets with the exponential decay threshold, so it is not considered
+ an onset event.
+ 
+ <p> Here is another example of the two threshold functions along 
+ with the spectral flux function and detected onsets:
+ 
+ 
+ <p>
+ <center>
+ <img src=img/peakcomponentfunctions.png>
+ </center>
+ 
+ 
+
+</ul>
+<a name=limitations></a>
+
+<a name=bugs></a>
+
+<a name=references></a>
+
+<font color=#bb9966><h3><i>REFERENCES</i></h3></font>
+<ul> 
+ <p class=hanging>
+ Dixon, Simon. "<a class=plain href=http://www.dafx.ca/proceedings/papers/p_133.pdf>Onset detection revisited</a>" in the Proceedings of the  
+ 9th International Conference on Digital Audio Effects (DAFx'06). Montreal,
+ Canada; September 18-20, 2006.
+ [<a href=http://www.dafx.ca/slides/slides_133.pdf class=plain>Slides</a>]
+ 
+
+</ul>
+<a name=download></a>
+
+<font color=#bb9966><h3><i>DOWNLOAD</i></h3></font>
+<ul>
+Compiled versions of the <small><small><i>Mz</i></small></small>SpectralFlux plugin can
+be downloaded from the <a class=link href=../download>download page</a>.<p> The source code for the plugin was last modified on 3 Jan 2007.<ul><li><i>Header:</i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ <a class=link href=src/MzSpectralFlux.h.html>html</a> | <a class=link href=src/MzSpectralFlux.h.pdf>PDF</a> | <a class=link href=src/MzSpectralFlux.h>text</a> ] <li><i>Source Code:</i> [ <a class=link href=src/MzSpectralFlux.cpp.html>html</a> | <a class=link href=src/MzSpectralFlux.cpp.pdf>PDF</a> | <a class=link href=src/MzSpectralFlux.cpp>text</a> ] </ul>
+</ul>
+<a name=seealso></a>
+
+<a name=allusions></a>
+
+
+<pre>
+
+
+
+</pre>
+</td></tr>
+</table>
+</center>
+
+</body>
+</html>
+

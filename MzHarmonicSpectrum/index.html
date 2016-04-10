@@ -1,0 +1,190 @@
+<!---------------------------------------------------------------------------->
+<html>
+<head>
+<title> Manpage for SV Mazurka Plugin: MzHarmonicSpectrum</title>
+<meta name="Document-Owner" content="Craig Sapp (craig@ccrma.stanford.edu)"> 
+<meta name="Author" content="Craig Stuart Sapp (craig@ccrma.stanford.edu)">
+<meta name="Creation-Date" content=" Wed Mar  9 15:11:34 PST 2005 ">
+<meta name="Revision-Date" content=" Wed Mar  9 15:11:34 PST 2005 ">
+<style type="text/css">
+<!-- 
+.pluginname { font-weight: bold;
+            text-decoration: none; 
+            font-size: 125%;
+            color: #116611}
+
+.plugintitlesv { font-weight: bold;
+            text-decoration: none; 
+            font-size: 200%;
+            color: #2faa15}
+
+.mydd dd {
+	margin-left: 0;
+	margin-bottom: 0.25em;}
+
+
+.plugintitlemz { font-weight: bold;
+            text-decoration: none; 
+            font-style: italic;
+            font-size: 150%;
+            color: #d61b1a}
+
+.link {  text-decoration: none;  }
+
+.function {  text-decoration: none; 
+             font-style: italic; }
+
+.indexitem { text-decoration: none; }
+            
+-->
+</style>
+</head>
+</head>
+
+
+<body bgcolor=#ffffff alink=#339933 link=#339933 vlink=#339933 text=#220000>
+<!-- header *************************************************** -->
+
+<center>
+<table width=760 cellpadding=0 cellspacing=0 border=0>
+<tr valign=top>
+<td>
+   <a href=http://www.charm.rhul.ac.uk><img alt="" border=0 src=../images/logo.gif></a>
+</td>
+<td>
+   <a href=http://mazurka.org.uk><img alt="" border=0 src=../images/banner.gif></a>
+</td>
+</tr>
+</table>
+<center>
+
+
+<!-- ------------------------------------------------------------- -->
+
+
+<center>
+<table width=600>
+<tr><td>
+
+<center>
+<table width=731 cellspacing=0 cellpadding=0>
+<tr width=731 height=78 valign=bottom><td width=231><a href=http://sv.mazurka.org.uk><img src=../img/svmazurkaplugin.png alt="SV Mazurka Plugin:" border=0></a></td>
+<td width=500 height=90><table cellpadding=0 cellspacing=0 width=500 height=90><tr height=73><td valign=bottom><center><span class=plugintitlemz><sub>Mz</sub></span><span class=plugintitlesv>HarmonicSpectrum</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</center></td></tr>
+<tr height=5><td></td></tr>
+<tr height=12><td><img src=../img/svpluginline.png alt="" border=0></td></tr></table>
+</td></tr></table>
+</center>
+<p>
+
+
+<font color=#bb9966><h3><i>SYNOPSIS</i></h3></font>
+<ul><b><small><small><i>Mz</i></small></small>HarmonicSpectrum</b> -- Displays the Harmonic Product Spectrum from which pitch 	estimates of monophonic harmonic input audio can be made.
+ 
+</ul>
+<a name=options></a>
+
+<font color=#bb9966><h3><i>OUTPUTS</i></h3></font>
+<ul><small><small><i>Mz</i></small></small>HarmonicSpectrum generates 3 outputs:<p>
+<dl class=mydd>
+<dt>1. <i><b><font color=#bb9966>Harmonic spectrum</font></b></i>
+<dd><ul><span class=noindent>The full harmonic product spectrum.
+</span></ul>
+
+<dt>2. <i><b><font color=#bb9966>Spectral power</font></b></i>
+<dd><ul><span class=noindent>The average power of each spectral frame.
+</span></ul>
+
+<dt>3. <i><b><font color=#bb9966>Raw pitch</font></b></i>
+<dd><ul><span class=noindent>Basic estimate of the pitch extracted from the spectrum.
+ 
+</span></ul>
+
+</dl>
+</ul>
+<a name=description></a>
+
+<font color=#bb9966><h3><i>DESCRIPTION</i></h3></font>
+<ul> 
+ The harmonic product spectrum (or harmonic spectrum for short) is the 
+ geometric mean of amplitudes of the harmonics associated with a particular 
+ frequency in the spectrum:
+ 
+ <p>
+ <center>
+ <img src=img-latexeqn/hps.png border=0>
+ <!--
+ <div class=latexeqn name=hps size=+1>
+ \mbox{HPS}(k) = \left(\prod_{n=1}^{N} Y(n\ k) \right)^{\frac{1}{N}}
+ </div>
+ -->
+ 
+ </center>
+ <p>
+ where HPS is the harmonic product spectrum, <i>k</i> is the <i>k</i>-th
+ indexed frequency bin in the harmonic spectrum, <i>Y</i> is the magnitude
+ spectrum of the positive frequencies, and <i>N</i> is the number of
+ harmonics to consider.
+ 
+ <p> The following schematic demonstrates how the harmonic spectrum
+ is calculates.  The original spectrum is squeezed so that each successive
+ harmonic of the original signal is aligned with the fundamental
+ harmonic.  To do this, the spectrum is squeezed by 1/2 to align the
+ first overtone with the fundamental (it doesn't matter what
+ frequency the fundamental is at because the first overtone is always
+ twice the frequency of the fundamental).  Then the spectrum is 
+ squeezed to 1/3 to align the second overtone with the fundamental, and
+ so on (typically for about 5 harmonics).
+ 
+ <p>
+ <center>
+ <img src=img/hpsdiagram.png border=0>
+ </center>
+ 
+ <p> Here is a comparison of the plain magnitude spectrum
+ and the harmonic product spectrum:
+ 
+ <p>
+ <center>
+ <img border=0 src=img/hpscompare.png>
+ </center>
+ 
+ <p> The nice property of the harmonic spectrum is that it gives
+ a simple estimate of the pitch in the audio signal.
+ 
+ 
+
+</ul>
+<a name=limitations></a>
+
+<a name=bugs></a>
+
+<font color=#bb9966><h3><i>BUGS</i></h3></font>
+<ul>Currently under development. Pitch estimate needs elaboration,         just finding the max at the moment but need to correct for
+        sub-harmonics which are really the fundamental.
+ 
+
+</ul>
+<a name=download></a>
+
+<font color=#bb9966><h3><i>DOWNLOAD</i></h3></font>
+<ul>
+Compiled versions of the <small><small><i>Mz</i></small></small>HarmonicSpectrum plugin can
+be downloaded from the <a class=link href=../download>download page</a>.<p> The source code for the plugin was last modified on 24 Jun 2006.<ul><li><i>Header:</i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ <a class=link href=src/MzHarmonicSpectrum.h.html>html</a> | <a class=link href=src/MzHarmonicSpectrum.h.pdf>PDF</a> | <a class=link href=src/MzHarmonicSpectrum.h>text</a> ] <li><i>Source Code:</i> [ <a class=link href=src/MzHarmonicSpectrum.cpp.html>html</a> | <a class=link href=src/MzHarmonicSpectrum.cpp.pdf>PDF</a> | <a class=link href=src/MzHarmonicSpectrum.cpp>text</a> ] </ul>
+</ul>
+<a name=seealso></a>
+
+<a name=allusions></a>
+
+
+<pre>
+
+
+
+</pre>
+</td></tr>
+</table>
+</center>
+
+</body>
+</html>
+

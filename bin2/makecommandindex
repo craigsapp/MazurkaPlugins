@@ -1,0 +1,411 @@
+#!/usr/bin/perl
+#
+# Programmer:    Craig Stuart Sapp <craig@ccrma.stanford.edu>
+# Creation Date: Fri Mar 11 21:47:26 PST 2005
+# Last Modified: Sun Mar 13 20:27:57 PST 2005
+# Filename:      ...humdrum/extras/web/bin/makecommandindex
+# Syntax:        perl 5
+#
+# Description:
+#
+
+use strict;
+
+my $inputfile = $ARGV[0];
+my $basedir   = $ARGV[1];
+my $mandir = "./";
+my $binasc = "/usr/ccarh/bin/binasc";
+my $datecolor = "#aaaaaa";
+
+my $line;
+open (INFILE, $inputfile) || die;
+my $entry;
+my $command;
+my @commandlist;
+my $i;
+my $replacement = "";
+
+while ($line = <INFILE>) {
+   if ($line =~ /<<contents>>/) {
+      @commandlist = getCommandList($mandir);
+      for ($i=0; $i<@commandlist; $i++) {
+         $entry = getCommandEntry($commandlist[$i]);
+         $replacement .= $entry;
+      }
+      $line =~ s/<<contents>>/$replacement/;
+      print $line;
+   } elsif ($line =~ /<<command=([a-zA-Z0-9_-]+)>>/) {
+      $command = $1;
+      $entry = getCommandEntry($command);
+      $line =~ s/<<command=([a-zA-Z0-9_-]+)>>/$entry/;
+      print $line;
+   } else {
+      print $line;
+   }
+}
+
+exit(0);
+
+##########################################################################
+
+
+##############################
+##
+## getCommandList --
+##
+
+sub getCommandList {
+   my ($dir) = @_;
+   my @output;
+
+   opendir(MDIR, $dir) || die;
+   my $file;
+   while ($file = readdir(MDIR)) {
+      next if $file =~ /^\./;
+      next if !-d "$dir/$file";
+      next if !-r "$dir/$file/index.dat";
+      $output[@output] = $file;
+   }
+   closedir MDIR;
+
+   @output = sort @output;
+   return @output;
+}
+
+
+
+##############################
+##
+## getCommandEntry --
+##
+
+sub getCommandEntry {
+   my ($command) = @_;
+   my $date;
+
+   my $output = "";
+   if (!-r "$mandir/$command/index.dat") {
+      $output = "ERROR inserting command info for $mandir/$command\n";
+      return $output;
+   }
+
+   my %maninfo = getManData("$mandir/$command/index.dat");
+
+   $output .= "<a name=$command></a>\n";
+   #$output .= "<table cellpadding=0 cellspacing=0 width=550 bgcolor=#bb9966>\n";
+   #$output .= "<tr><td>\n";
+   #$output .= "<table cellpadding=0 cellspacing=0 width=550 bgcolor=#f7eedd>\n";
+   $output .= "<table cellpadding=0 cellspacing=0 width=550 bgcolor=#f2efd7>\n";
+   $output .= "<tr valign=top><td>\n";
+   $output .= "<table>\n";
+   $output .= "<tr valign=baseline>\n";
+   my $mzcommand = $command;
+   if ($mzcommand =~ s/^Mz//) {
+      $mzcommand = "<i><small><sub>Mz</sub></small></i>$mzcommand";
+   }
+   $output .= "<td colspan=12><a href=$command class=\"commandname\">$mzcommand:</a>\n";
+   $output .= "$maninfo{'APROPOS'}\n";
+   $output .= "</td>\n";
+   $output .= "</tr>\n";
+   $output .= "<tr valign=top>\n";
+   $output .= "<td width=20></td>\n";
+   $output .= "<td width=85> <br>\n";
+   if (-r "$basedir/example/$command/index.html") {
+      $output .= "<a class=program href=example/$command>examples</a> \n";
+   }
+   $output .= "</td>\n";
+   $output .= "<td width=10></td>\n";
+   $output .= "<td width=80>";
+   
+   if (-r "$command/src/$command.cpp.html") {
+     $output .= "<small><i><a class=program href=$command/src/$command.cpp.html>source&nbsp;code</a>/<a class=program href=$command/src/$command.h.html>header</a></i></small>";
+   } else {
+      $output .= "<small><i><a class=program href=$command/src/$command.cpp>source&nbsp;code</a>/<a class=program href=$command/src/$command.h>header</a></i></small>";
+   }
+   $output .= "<br>\n";
+   $date = getProgramDate("$command/src/$command.cpp");
+   $output .= "<font color=$datecolor size=-2>$date</font>\n";
+   $output .= "</td>\n";
+   $output .= "<td width=10></td>\n";
+   $output .= "<td width=65>";
+
+   if (-r "$basedir/bin/linux-static/$command") {
+      $output .= "<a class=program href=bin/linux-static/$command>linux</a> <br>\n";
+      $date = getCompileDate("$basedir/bin/linux-static/$command");
+      $output .= "<font color=$datecolor size=-2>$date</font>";
+   }
+
+   $output .= "</td>\n";
+   $output .= "<td width=10></td>\n";
+   $output .= "<td width=65>";
+
+   if (-r "$basedir/bin/osx/$command") {
+      $output .= "<a class=program href=bin/osx/$command>osx</a> <br>\n";
+      $date = getCompileDate("$basedir/bin/osx/$command");
+      $output .= "<font color=$datecolor size=-2>$date</font>";
+   }
+
+   $output .= "</td>\n";
+   $output .= "</td>\n";
+   $output .= "<td width=10></td>\n";
+   $output .= "<td width=65>";
+
+   if (-r "$basedir/bin/cygwin/$command.exe") {
+      $output .= "<a class=program href=bin/cygwin/$command.exe>cygwin</a> <br>\n";
+      $date = getCompileDate("$basedir/bin/cygwin/$command.exe");
+      $output .= "<font color=$datecolor size=-2>$date</font>";
+   }
+
+   $output .= "</td>\n";
+   $output .= "</td>\n";
+   $output .= "<td width=10></td>\n";
+   $output .= "<td>";
+
+   if (-r "$basedir/bin/windows/$command.exe") {
+      $output .= "<a class=program href=bin/windows/$command.exe>windows</a> <br>\n";
+      $date = getCompileDate("$basedir/bin/windows/$command.exe");
+      $output .= "<font color=$datecolor size=-2>$date</font>";
+   }
+
+   $output .= "</td>\n";
+   $output .= "</td>\n";
+   $output .= "</tr>\n";
+   $output .= "\n";
+   $output .= "</tr></table>\n";
+   $output .= "</td></tr></table>\n";
+   #$output .= "</td></tr></table>\n";
+
+   return $output;
+}
+
+
+
+##############################
+##
+## getManData --
+##
+
+sub getManData {
+   my ($datafile) = @_;
+   my %output;
+
+   my $key = "";
+   my $newkey = "";
+   my $value = "";
+   my $newvalue = "";
+   my $line;
+   my $counter = 1;
+   my $counter2 = 1;
+
+   open (DFILE, "$datafile") || die;
+   while ($line = <DFILE>) {
+      if ($line =~ /^\@([^:]+):\s*(.*)/) {
+         $newkey = $1;
+         $newvalue = $2;
+         if ($key eq "OPTIONNAME") {
+            $counter = int($counter);
+            $counter = "0$counter" if $counter < 10;
+            $key = "OPTIONNAME$counter";
+            $counter++;
+         }
+
+         if ($key eq "OPTIONINFO") {
+            $counter2 = int($counter2);
+            $counter2 = "0$counter2" if $counter2 < 10;
+            $key = "OPTIONINFO$counter2";
+            $counter2++;
+         }
+
+         if ($key !~ /^\s*$/) {
+            $output{$key} = $value;
+         }
+         $key = $newkey;
+         $value = $newvalue;
+
+      } else {
+         $value .= " $line";
+      }
+   }
+   close DFILE;
+
+   return %output;
+}
+
+
+
+
+##############################
+##
+## getCompileDate --
+##
+
+sub getCompileDate {
+   my ($file) = @_;
+
+   my $output = "";
+   my $finfo;
+
+   my $day;
+   my $month;
+   my $year;
+
+   my $data = `$binasc -a $file | grep -B 1 -C 1 compiled:`;
+   if ($data =~ /compiled:\s*([^ \t\n]+)\s+([^ \t\n]+)\s+(\d\d\d\d)/) {
+      $output = "$2 $1 $3";
+   } elsif ($data =~ /([^ \t\n]+)\s+([^ \t\n]+)\s+(\d\d\d\d)\s*compiled:/) {
+      # date was stored backwards from compiled: marker
+      $output = "$2 $1 $3";
+   } else {
+      # date there was not date found, so used file creation date
+      $finfo = `stat -L $file`;
+      if ($finfo =~ /Modify:\s+(\d\d\d\d)-(\d\d)-(\d\d)/) {
+         # Change: 2004-11-10 23:30:08.000000000 -0800
+         $day   = $3;
+         $month = $2;
+         $year  = $1;
+         $day = int($day);
+         $month = getMonth($month);
+         $output = "$day $month $year";
+      } else {
+
+         $output = "xxxx";
+      }
+      
+   }
+
+   return $output;
+
+}
+
+
+ 
+##############################
+##
+## getProgramDate --
+##
+
+sub getProgramDate {
+   my ($file) = @_;
+
+   my $output = "";
+   if (!open (PFILE, $file)) {
+      return "";
+      print "Cannot get Program Date from $file\n"; 
+      die;
+   }
+   my @contents = <PFILE>;
+   my $date;
+
+   # search the header for the most recent time stamp
+   my $i = 0;
+   while ($contents[$i] =~ /^\/\//) {
+
+      if ($contents[$i] =~ /Last Modified:\s*([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+(\d\d\d\d)/) {
+         $date = "$3 $2 $6";
+         $output = findEarliestDate($output, $date);
+      } elsif ($contents[$i] =~ /Last Modified:\s*([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+(\d\d\d\d)/) {
+         $date = "$3 $2 $5";
+         $output = findEarliestDate($output, $date);
+      }
+
+      $i++;
+   }
+   close PFILE;
+
+   return $output;
+}
+
+
+
+##############################
+##
+## findEarliestDate --
+##
+
+sub findEarliestDate {
+   my ($date1, $date2) = @_;
+
+   my $year1;
+   my $year2;
+   my $month1;
+   my $month2;
+   my $day1;
+   my $day2;
+
+   $date1 =~ /([^ ]+)\s+([^ ]+)\s+([^ ]+)/;
+   $day1   = $1;
+   $month1 = $2;
+   $year1  = $3;
+   $date2 =~ /([^ ]+)\s+([^ ]+)\s+([^ ]+)/;
+   $day2   = $1;
+   $month2 = $2;
+   $year2  = $3;
+
+   return $date2 if $year1 == 0;
+   return $date1 if $year2 == 0;
+   return $date2 if $year2 > $year1;
+   return $date1 if $year1 > $year2;
+
+   $month1 = getMonthNumber($month1);
+   $month2 = getMonthNumber($month2);
+
+   return $date2 if $month2 > $month1;
+   return $date1 if $month1 > $month2;
+
+   return $date2 if $day2 > $day1;
+   return $date1 if $day1 > $day2;
+
+   # they are the same date so it does not matter:
+   return $date1;
+}
+
+
+
+##############################
+##
+## getMonthNumber --
+##
+
+sub getMonthNumber {
+   my ($month) = @_;   
+
+   return 1  if $month =~ /^Jan/;
+   return 2  if $month =~ /^Feb/;
+   return 3  if $month =~ /^Mar/;
+   return 4  if $month =~ /^Apr/;
+   return 5  if $month =~ /^May/;
+   return 6  if $month =~ /^Jun/;
+   return 7  if $month =~ /^Jul/;
+   return 8  if $month =~ /^Aug/;
+   return 9  if $month =~ /^Sep/;
+   return 10 if $month =~ /^Oct/;
+   return 11 if $month =~ /^Nov/;
+   return 12 if $month =~ /^Dec/;
+   return 0;
+}
+
+
+##############################
+##
+## getMonth -- return the Month name for a given month number
+##
+
+sub getMonth {
+   my ($num) = @_;
+   return "Jan" if $num == 1;
+   return "Feb" if $num == 2;
+   return "Mar" if $num == 3;
+   return "Apr" if $num == 4;
+   return "May" if $num == 5;
+   return "Jun" if $num == 6;
+   return "Jul" if $num == 7;
+   return "Aug" if $num == 8;
+   return "Sep" if $num == 9;
+   return "Oct" if $num == 10;
+   return "Nov" if $num == 11;
+   return "Dec" if $num == 12;
+   return $num;
+}
+
+
+

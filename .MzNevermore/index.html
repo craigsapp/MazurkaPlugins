@@ -1,0 +1,551 @@
+<!---------------------------------------------------------------------------->
+<html>
+<head>
+<title> Manpage for SV Mazurka Plugin: MzNevermore</title>
+<meta name="Document-Owner" content="Craig Sapp (craig@ccrma.stanford.edu)"> 
+<meta name="Author" content="Craig Stuart Sapp (craig@ccrma.stanford.edu)">
+<meta name="Creation-Date" content=" Wed Mar  9 15:11:34 PST 2005 ">
+<meta name="Revision-Date" content=" Wed Mar  9 15:11:34 PST 2005 ">
+<style type="text/css">
+<!-- 
+.pluginname { font-weight: bold;
+            text-decoration: none; 
+            font-size: 125%;
+            color: #116611}
+
+.plugintitlesv { font-weight: bold;
+            text-decoration: none; 
+            font-size: 200%;
+            color: #2faa15}
+
+.mydd dd {
+	margin-left: 0;
+	margin-bottom: 0.25em;}
+
+
+.plugintitlemz { font-weight: bold;
+            text-decoration: none; 
+            font-style: italic;
+            font-size: 150%;
+            color: #d61b1a}
+
+.link {  text-decoration: none;  }
+
+.function {  text-decoration: none; 
+             font-style: italic; }
+
+.indexitem { text-decoration: none; }
+            
+-->
+</style>
+</head>
+</head>
+
+
+<body bgcolor=#ffffff alink=#339933 link=#339933 vlink=#339933 text=#220000>
+<!-- header *************************************************** -->
+
+<center>
+<table width=760 cellpadding=0 cellspacing=0 border=0>
+<tr valign=top>
+<td>
+   <a href=http://www.charm.rhul.ac.uk><img alt="" border=0 src=../images/logo.gif></a>
+</td>
+<td>
+   <a href=http://mazurka.org.uk><img alt="" border=0 src=../images/banner.gif></a>
+</td>
+</tr>
+</table>
+<center>
+
+
+<!-- ------------------------------------------------------------- -->
+
+
+<center>
+<table width=600>
+<tr><td>
+
+<center>
+<table width=731 cellspacing=0 cellpadding=0>
+<tr width=731 height=78 valign=bottom><td width=231><a href=http://sv.mazurka.org.uk><img src=../img/svmazurkaplugin.png alt="SV Mazurka Plugin:" border=0></a></td>
+<td width=500 height=90><table cellpadding=0 cellspacing=0 width=500 height=90><tr height=73><td valign=bottom><center><span class=plugintitlemz><sub>Mz</sub></span><span class=plugintitlesv>Nevermore</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</center></td></tr>
+<tr height=5><td></td></tr>
+<tr height=12><td><img src=../img/svpluginline.png alt="" border=0></td></tr></table>
+</td></tr></table>
+</center>
+<p>
+
+
+<font color=#bb9966><h3><i>SYNOPSIS</i></h3></font>
+<ul><b><small><small><i>Mz</i></small></small>Nevermore</b> -- Independent control of window size and transform size for      spectrogram display.
+ 
+</ul>
+<ul>
+ 
+ <small><small><i>Mz</i></small></small>Nevermore displays spectrograms in a manner similar to the
+ <a href=http://www.birds.cornell.edu/brp/raven/Raven.html>Raven audio
+ editor</a> from the Cornell Lab of Ornithology.
+ 
+ 
+
+</ul>
+
+<a name=options></a>
+<img vspace=10 hspace=10 src=img/MzNevermore-parameters.png border=0 align=right>
+
+<font color=#bb9966><h3><i>INPUT PARAMETERS</i></h3></font>
+<ul><small><small><i>Mz</i></small></small>Nevermore accepts 10 input parameters:<p>
+<dl class=mydd>
+<dt>1. <i><b><font color=#bb9966>Window size</font></b></i>
+<dd><ul><span class=noindent>The number of samples of auido data which will be
+ 		used to calculate the spectrum.
+ 
+</span></ul>
+
+<dt>2. <i><b><font color=#bb9966>Transform size</font></b></i>
+<dd><ul><span class=noindent>The size of the windowed audio plus silence padding
+ 		to reduce vertical pixelization of the spectrum display.
+ 
+</span></ul>
+
+<dt>3. <i><b><font color=#bb9966>Step size</font></b></i>
+<dd><ul><span class=noindent>The number of samples to shift in the audio for each
+ 		spectrogram frame.
+ 
+</span></ul>
+
+<dt>4. <i><b><font color=#bb9966>Min spectral bin</font></b></i>
+<dd><ul><span class=noindent>The minimum frequency bin to display in the spectrogram.
+ 
+</span></ul>
+
+<dt>5. <i><b><font color=#bb9966>Min spectral frequency (in Hz)</font></b></i>
+<dd><ul><span class=noindent>The minimum frequency in Hz to display in the spectrogram.
+ 		This value will be used instead of parameter 4 if it
+ 		is set to a value other than 0.
+ 
+</span></ul>
+
+<dt>6. <i><b><font color=#bb9966>Maximum spectral bin</font></b></i>
+<dd><ul><span class=noindent>The maximum frequency bin to display in the spectrogram.
+ 
+</span></ul>
+
+<dt>7. <i><b><font color=#bb9966>Maximum spectral frequency (in Hz)</font></b></i>
+<dd><ul><span class=noindent>The maximum frequency in Hz to display in the spectrogram.
+ 		This value will be used instead of parameter 6 if it
+ 		is set to a value other than 0.
+ 
+</span></ul>
+
+<dt>8. <i><b><font color=#bb9966>Compress range</font></b></i>
+<dd><ul><span class=noindent>Do dynamic range compression on the amplitude values
+ 		(makes quiet regions more visible).
+ 
+</span></ul>
+
+<dt>9. <i><b><font color=#bb9966>Window type</font></b></i>
+<dd><ul><span class=noindent>The analysis window applied to the audio data before
+ 		the Fourier transform is calculated.  Hann is the default
+ 		value which will work in most cases.  
+ 
+</span></ul>
+
+<dt>10. <i><b><font color=#bb9966>Frequency scale</font></b></i>
+<dd><ul><span class=noindent>This is the scaling factor for the vertical axis in the
+ 		spectrogram.  The default is "Hertz" which is a linear
+ 		scale in terms of frequency values which is the most
+ 		common display format for spectrograms.  The "interval"
+ 		display is a logarithmic scaling which shows a constant
+ 		width for intervals.
+ 		
+ 
+</span></ul>
+
+</dl>
+</ul>
+<a name=description></a>
+
+<font color=#bb9966><h3><i>DESCRIPTION</i></h3></font>
+<ul> 
+ Below is an idealized spectrogram of a <a href=sound/example5.wav>sound</a>
+ which was synthesized from 28 sinewaves, each represented by one of the
+ lines in the following figure.  This idealized spectrogram will be used
+ to demonstrate the various parameters which can control the display
+ of the spectrogram in the <small><small><i>Mz</i></small></small>Nevermore plugin.
+ 
+ <p>
+ <center>
+ <img src=img/idealspectrogram.png border=0>
+ </center>
+ 
+ 
+ <pre>
+ 
+ </pre>
+ 
+ <p> <b>Frequency scale</b> <hr noshade>
+ 
+ <p>
+ The frequency scale parameter controls format for the vertical axis of the
+ spectrogram.  By default the spectrogram is displayed with "Hertz"
+ linearly on the vertical axis.   The other option is "Interval" which
+ displays equivalent intervals equally at any position on the vertical
+ scale.
+ 
+ <p> Since the example ideal spectrogram was used to create the sound
+ on the "Interval" frequency scale, the spectrogram on the right
+ looks more like the ideal spectrogram in this case:
+ 
+ <p>
+ <center>
+ <table>
+ <tr valign=top><td><center>"Hertz" scaling of frequencies</center><p><img src=img/linearspectrogram.png border=0>
+ </td><td><center>"Interval" scaling of frequencies</center>
+ <img src=img/intervalspectrogram.png border=0>
+ </td></tr>
+ </table>
+ </center>
+ 
+ <p>
+ "Hertz" scaling is useful when you want to view harmonics as equally
+ spaced lines.  "Interval" scalign is useful when you want to view
+ intervales as equally spaced lines.
+ 
+ 
+ <p>
+ 
+ The difference can perhaps be seen more clearly with a harmonically
+ pitched note as shown in the following figure:
+ 
+ <p>
+ <center>
+ <img src=img/hertzinterval.png border=0>
+ </center>
+ 
+ <p> 
+ The harmonics are labeled from 1 being the fundamental, up to 
+ 6 being the 6th harmonic.  If the fundamental is 100 Hz, for example,
+ then the 6th harmonic is at 600 Hz.  In the "Hertz" vertical scaling,
+ the harmonics are evenly spaced at 100 Hz, 200 Hz, 300 Hz, 400 Hz,
+ 500 Hz, and 600 Hz.  In the "Interval" vertical scaling, all interval
+ classes retain their size regardless of their vertical position.
+ For example, two of octaves are marked in the figure above.  In the
+ "Interval" scaling, the size of the octaves are equal.  In the 
+ "Hertz" scaling, the lower octave is 1/2 the size of the octave
+ indicated above it.
+ 
+ 
+ <p> <b>Step size</b>  <hr noshade>
+ 
+ <p>
+ The <i>Step size</i> parameter specifies how many samples to jump
+ between analysis frames in the audio data.   A smaller number will 
+ give a smoother look to the spectrogram because the spectrogram 
+ is updated more often over time.
+ 
+ 
+ By default, the step size is set to 512 samples.  At a 44.1 kHz 
+ sampling rate (as used with Compact Disc recordings), that is a
+ time of 512 / 44100 = 11.6 milliseconds.  Here is a picture of the
+ center of the spectrogram using a 512 sample step size:
+ 
+ <p>
+ <center>
+ <img src=img/step-512.png border=0>
+ </center>
+ 
+ <p>
+ Decreasing the step size from 512 to 256 will make the spectrogram 
+ display update twice as often:
+ 
+ <p>
+ <center>
+ <img src=img/step-256.png border=0>
+ </center>
+ 
+ <p> Likewise, increasing the step size to 1024 samples (23.2 ms), will
+ increase the quantization on the horizontal time axis:
+ 
+ <p>
+ <center>
+ <img src=img/step-1024.png border=0>
+ </center>
+ 
+ 
+ If the  step size is smaller than the <i>window size</i>, then the
+ audio data between spectrogram frames will overlap. 
+ 
+ 
+ 
+ <pre>
+ 
+ </pre>
+ <a name=compression> </a>
+ <p> <b> Compress range</b> <hr noshade>
+ 
+ <p>
+ The <i>Compress range</i> option applies a compression function
+ to the amplitudes (in decibels) in the spectrogram.  If this
+ option is selected, a good visual compromise between quiet and 
+ loud sounds occurs.  
+ 
+ 
+ <p>
+ <center>
+ <img src=img/rangecompression.png border=0>
+ </center>
+ 
+ The uncompressed range shown on the left contains significant amounts
+ of green in the plot where there is no sound activity.  It is displaying
+ the noise floor of the audio file which is at around -96 dB since the file
+ contains 16-bit amplitude values.
+ Since the noise floor is not interesting to see, the compressed amplitude
+ range on the right places the noise floor at the colour black.
+ 
+ <p> The compressed range is best when looking at music which contains
+ a variety of dynamics throughout.  However, if you compare the pictures,
+ the compression setting used in this case saturates the peaks near 
+ the bottom of the spectrogram, causing a loss of visual frequency
+ discrimination.
+ 
+ <pre>
+ 
+ </pre>
+ <a name=windowsize> </a>
+ <p> <b> Window size</b> <hr noshade>
+ 
+ <p> The <i>Window size</i> parameter controls the frequency resolution
+ ability of the spectrogram.  The larger the window size, the more
+ accurately the frequencies can be resolved.  However, the larger
+ the window size, the more spectral smearing occurs which decreases
+ the visual sharpness of the display.  The following figure demonstrates
+ the trade-off between frequency accuracy and resolution:
+ 
+ <p>
+ <center>
+ <img src=img/windowsizes.png>
+ </center>
+ 
+ 
+ For the window size equal to 512, the low frequencies are poorly 
+ resolved, since you cannot see the individual harmonic tracks
+ towards the bottom of the spectrogram.  As the size of the window
+ increases, the frequency resolution increases, and the lower
+ frequency tracks become clearer.
+ 
+ <p> However, as the window size increases, the harmonic tracks
+ start to smear when they change pitch, and become very sharp when
+ they are at a constant pitch.
+ 
+ <p> If you are analyzing vocal music, violin music or other 
+ similar instruments which use vibrato, you must be careful to
+ use a smaller window size so that the frequencies in the vibrato
+ do not smear.  For piano and other fixed-pitch instruments, a
+ larger window is more suitable since the smearing would not
+ be as noticeable.
+ 
+ <pre>
+ 
+ </pre>
+ <a name=transformsize> </a>
+ <p> <b> Transform size</b> <hr noshade>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+</ul>
+<a name=limitations></a>
+
+<a name=bugs></a>
+
+<font color=#bb9966><h3><i>BUGS</i></h3></font>
+<ul>Crashes Sonic Visualiser occasionally for some unknown reason to be examined in the future.
+ 
+
+</ul>
+<a name=download></a>
+
+<font color=#bb9966><h3><i>DOWNLOAD</i></h3></font>
+<ul>
+Compiled versions of the <small><small><i>Mz</i></small></small>Nevermore plugin can
+be downloaded from the <a class=link href=../download>download page</a>.<p> The source code for the plugin was last modified on 20 Jul 2006.<ul><li><i>Header:</i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ <a class=link href=src/MzNevermore.h.html>html</a> | <a class=link href=src/MzNevermore.h.pdf>PDF</a> | <a class=link href=src/MzNevermore.h>text</a> ] <li><i>Source Code:</i> [ <a class=link href=src/MzNevermore.cpp.html>html</a> | <a class=link href=src/MzNevermore.cpp.pdf>PDF</a> | <a class=link href=src/MzNevermore.cpp>text</a> ] </ul>
+</ul>
+<a name=seealso></a>
+
+<a name=SEEALSO></a><font color=#bb9966><h3><i>SEE ALSO</i></h3></font>
+<ul><a class=link href=../MzSpectrogramFFTW><small><small><i>Mz</i></small></small>SpectrogramFFTW</a> 
+
+</ul>
+<a name=allusions></a>
+
+<a name=ALLUSIONS></a><font color=#bb9966><h3><i>ALLUSIONS</i></h3></font>
+<ul> 
+ <center>
+ <table>
+ <tr><td>
+ 
+ <b>The Raven</b><br>
+ <i>by Edgar Allan Poe</i>
+ <p>
+ 
+ <p>
+ Once upon a midnight dreary, while I pondered, weak and weary,<br>
+ Over many a quaint and curious volume of forgotten lore--<br>
+ While I nodded, nearly napping, suddenly there came a tapping,<br>
+ As of some one gently rapping, rapping at my chamber door.<br>
+ "'Tis some visiter," I muttered, "tapping at my chamber door--<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>Only this and nothing more."
+ <p>
+ Ah, distinctly I remember it was in the bleak December,<br>
+ And each separate dying ember wrought its ghost upon the floor.<br>
+ Eagerly I wished the morrow;--vainly I had sought to borrow<br>
+ From my books surcease of sorrow--sorrow for the lost Lenore--<br>
+ For the rare and radiant maiden whom the angels name Lenore--<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>Nameless here for evermore.
+ <p>
+ And the silken sad uncertain rustling of each purple curtain<br>
+ Thrilled me--filled me with fantastic terrors never felt before;<br>
+ So that now, to still the beating of my heart, I stood repeating<br>
+ "'Tis some visiter entreating entrance at my chamber door--<br>
+ Some late visiter entreating entrance at my chamber door;<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>This it is and nothing more."
+ <p>
+ Presently my soul grew stronger; hesitating then no longer,<br>
+ "Sir," said I, "or Madam, truly your forgiveness I implore;<br>
+ But the fact is I was napping, and so gently you came rapping,<br>
+ And so faintly you came tapping, tapping at my chamber door,<br>
+ That I scarce was sure I heard you"--here I opened wide the door--<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>Darkness there and nothing more.
+ <p>
+ Deep into that darkness peering, long I stood there wondering, fearing,<br>
+ Doubting, dreaming dreams no mortals ever dared to dream before;<br>
+ But the silence was unbroken, and the stillness gave no token,<br>
+ And the only word there spoken was the whispered word, "Lenore?"<br>
+ This I whispered, and an echo murmured back the word, "Lenore!"--<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>Merely this and nothing more.
+ <p>
+ Back into the chamber turning, all my soul within me burning,<br>
+ Soon again I heard a tapping something louder than before.<br>
+ "Surely," said I, "surely that is something at my window lattice;<br>
+ Let me see, then, what thereat is and this mystery explore--<br>
+ Let my heart be still a moment and this mystery explore;--<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>'Tis the wind and nothing more.
+ <p>
+ Open here I flung the shutter, when, with many a flirt and flutter,<br>
+ In there stepped a stately Raven of the saintly days of yore.<br>
+ Not the least obeisance made he; not a minute stopped or stayed he,<br>
+ But, with mien of lord or lady, perched above my chamber door--<br>
+ Perched upon a bust of Pallas just above my chamber door--<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>Perched, and sat, and nothing more.
+ <p>
+ Then the ebony bird beguiling my sad fancy into smiling,<br>
+ By the grave and stern decorum of the countenance it wore,<br>
+ "Though thy crest be shorn and shaven, thou," I said, "art sure no craven,<br>
+ Ghastly grim and ancient Raven wandering from the Nightly shore--<br>
+ Tell me what thy lordly name is on the Night's Plutonian shore!"<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>Quoth the Raven, "Nevermore."
+ <p>
+ Much I marvelled this ungainly fowl to hear discourse so plainly,<br>
+ Though its answer little meaning--little relevancy bore;<br>
+ For we cannot help agreeing that no living human being<br>
+ Ever yet was blessed with seeing bird above his chamber door--<br>
+ Bird or beast upon the sculptured bust above his chamber door,<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>With such name as "Nevermore."
+ <p>
+ But the Raven, sitting lonely on that placid bust, spoke only<br>
+ That one word, as if its soul in that one word he did outpour<br>
+ Nothing farther then he uttered; not a feather then he fluttered--<br>
+ Till I scarcely more than muttered: "Other friends have flown before--<br>
+ On the morrow he will leave me, as my Hopes have flown before."<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>Then the bird said "Nevermore."
+ <p>
+ Startled at the stillness broken by reply so aptly spoken,<br>
+ "Doubtless," said I, "what it utters is its only stock and store,<br>
+ Caught from some unhappy master whom unmerciful Disaster<br>
+ Followed fast and followed faster till his songs one burden bore--<br>
+ Till the dirges of his Hope that melancholy burden bore<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>Of 'Never--nevermore.'"
+ <p>
+ But the Raven still beguiling all my sad soul into smiling,<br>
+ Straight I wheeled a cushioned seat in front of bird and bust and door;<br>
+ Then, upon the velvet sinking, I betook myself to linking<br>
+ Fancy unto fancy, thinking what this ominous bird of yore--<br>
+ What this grim, ungainly, ghastly, gaunt, and ominous bird of yore<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>Meant in croaking "Nevermore."
+ <p>
+ This I sat engaged in guessing, but no syllable expressing<br>
+ To the fowl whose fiery eyes now burned into my bosom's core;<br>
+ This and more I sat divining, with my head at ease reclining<br>
+ On the cushion's velvet lining that the lamp-light gloated o'er,<br>
+ But whose velvet violet lining with the lamp-light gloating o'er<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>She shall press, ah, nevermore!
+ <p>
+ Then, methought, the air grew denser, perfumed from an unseen censer<br>
+ Swung by Seraphim whose foot-falls tinkled on the tufted floor.<br>
+ "Wretch," I cried, "thy God hath lent thee--by these angels he hath sent thee<br>
+ Respite--respite and nepenthe from thy memories of Lenore!<br>
+ Quaff, oh quaff this kind nepenthe and forget this lost Lenore!"<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>Quoth the Raven, "Nevermore."
+ <p>
+ "Prophet!" said I, "thing of evil!--prophet still, if bird or devil!--<br>
+ Whether Tempter sent, or whether tempest tossed thee here ashore,<br>
+ Desolate, yet all undaunted, on this desert land enchanted--<br>
+ On this home by Horror haunted--tell me truly, I implore--<br>
+ Is there--is there balm in Gilead?--tell me--tell me, I implore!"<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>Quoth the Raven, "Nevermore."
+ <p>
+ "Prophet!" said I, "thing of evil!--prophet still, if bird or devil!<br>
+ By that Heaven that bends above us--by that God we both adore--<br>
+ Tell this soul with sorrow laden if, within the distant Aidenn,<br>
+ It shall clasp a sainted maiden whom the angels name Lenore--<br>
+ Clasp a rare and radiant maiden whom the angels name Lenore."<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>Quoth the Raven, "Nevermore."
+ <p>
+ "Be that our sign of parting, bird or fiend!" I shrieked, upstarting--<br>
+ "Get thee back into the tempest and the Night's Plutonian shore!<br>
+ Leave no black plume as a token of that lie thy soul has spoken!<br>
+ Leave my loneliness unbroken!--quit the bust above my door!<br>
+ Take thy beak from out my heart, and take thy form from off my door!"<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>Quoth the Raven, "Nevermore."
+ <p>
+ And the Raven, never flitting, still is sitting, still is sitting<br>
+ On the pallid bust of Pallas just above my chamber door;<br>
+ And his eyes have all the seeming of a demon's that is dreaming<br>
+ And the lamp-light o'er him streaming throws his shadows on the floor;<br>
+ And my soul from out that shadow that lies floating on the floor<br>
+ <tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>Shall be lifted--nevermore!
+ <p>
+ 
+ 
+ 
+ </td></tr></table>
+ </center>
+ 
+ 
+ 
+ 
+
+</ul>
+
+<pre>
+
+
+
+</pre>
+</td></tr>
+</table>
+</center>
+
+</body>
+</html>
+

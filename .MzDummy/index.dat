@@ -1,0 +1,53 @@
+@BEGIN:	SVPLUGIN
+
+@NAME: MzDummy
+@APROPOS: Measures the power over time of an audio signal.
+
+@SUMMARY:  Generates function data for various curves derived from the
+power in the audio signal.
+
+@BEGIN:	PARAMETERS
+
+@PARAMETER01: Window size: 
+		The size of the analysis window in milliseconds over which 
+		the power will be calculated.
+
+@END:	PARAMETERS
+
+
+@BEGIN:	OUTPUTS
+
+@OUTPUT01: Raw power:
+	A function of the average raw power for each input signal block.
+
+@END:	OUTPUTS
+
+
+@DESCRIPTION:  
+
+<p>
+<center>
+<div class=latexeqn name=avgpower size=+3>
+\mbox{cell}_{ij} = \max_{k\ne r} \ \mbox{Correlation}(\mbox{performance}_{ijr}, \mbox{performance}_{ijk})  
+</div>
+</center>
+<p>
+
+
+<p>
+<div class=latexeqn name=test1 size=+4>
+R = \min_p \sum_n I_{n,p}
+</div>
+
+
+@LIMITATIONS: 
+ 
+@BUGS:  
+
+@SEEALSO: 
+
+@BEGIN:	REFERENCES
+@REFERENCE:
+@END:	REFERENCES
+
+@END:	SVPLUGIN

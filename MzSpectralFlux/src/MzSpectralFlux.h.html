@@ -1,0 +1,170 @@
+<!---------------------------------------------------------------------------->
+<html>
+<head>
+<title> Sig++ example program: MzSpectralFlux.h </title>
+<meta name="Document-Owner" content="Craig Sapp (craig@ccrma.stanford.edu)"> 
+<meta name="Author" content="Craig Stuart Sapp (craig@ccrma.stanford.edu)">
+<meta name="Creation-Date" content=" Tue May  9 19:38:11 PDT 2000 ">
+<meta name="Revision-Date" content=" Thu Jan  4 02:12:37 PST 2007
+ ">
+</head>
+
+<body bgcolor=#ffffff alink=#333399 link=#333399 vlink=#333399 text=#220000>
+<!-- header *************************************************** -->
+
+<center>
+<table width=760 cellpadding=0 cellspacing=0 border=0>
+<tr valign=top>
+<td>
+   <a href=http://www.charm.rhul.ac.uk><img alt="" border=0 src=../../images/logo.gif></a>
+</td>
+<td>
+   <a href=http://mazurka.org.uk><img alt="" border=0 src=../../images/banner.gif></a>
+</td>
+</tr>
+</table>
+</center>
+
+<center>
+<table><tr><td>
+
+
+<pre>
+<font color=#229933>//</font>
+<font color=#229933>// Programmer:    Craig Stuart Sapp &lt;craig@ccrma.stanford.edu&gt;</font>
+<font color=#229933>// Creation Date: Mon Dec 18 20:31:02 PST 2006</font>
+<font color=#229933>// Last Modified: Wed Jan  3 06:09:32 PST 2007</font>
+<font color=#229933>// Filename:      MzSpectralFlux.h</font>
+<font color=#229933>// URL:           <a href=http://sv.mazurka.org.uk/include/MzSpectralFlux.h>http://sv.mazurka.org.uk/include/MzSpectralFlux.h</a></font>
+<font color=#229933>// Documentation: <a href=http://sv.mazurka.org.uk/MzSpectralFlux>http://sv.mazurka.org.uk/MzSpectralFlux</a></font>
+<font color=#229933>// Syntax:        ANSI99 C++; vamp 0.9 plugin</font>
+<font color=#229933>//</font>
+<font color=#229933>// Description:   Calculate changes in spectral energy for onset detection.</font>
+<font color=#229933>// </font>
+
+<font color=#cccccc>#ifndef _MZSPECTRALFLUX_H_INCLUDED</font>
+<font color=#cccccc>#define _MZSPECTRALFLUX_H_INCLUDED</font>
+
+#include "MazurkaPlugin.h"  <font color=#229933>// Mazurka plugin interface for Sonic Visualiser</font>
+#include "MazurkaTransformer.h"
+#include "MazurkaWindower.h"
+
+#include &lt;vector&gt;
+
+class MzSpectralFlux : public MazurkaPlugin {
+
+   public: 
+
+   <font color=#229933>// plugin interface functions:</font>
+
+                    MzSpectralFlux          (float samplerate);
+      virtual      ~MzSpectralFlux          ();
+
+      <font color=#229933>// required polymorphic functions inherited from PluginBase:</font>
+      std::string   getName                 (void) const;
+      std::string   getMaker                (void) const;
+      std::string   getCopyright            (void) const;
+      std::string   getDescription          (void) const;
+      int           getPluginVersion        (void) const;
+
+      <font color=#229933>// optional parameter interface functions</font>
+      ParameterList getParameterDescriptors (void) const;
+
+      <font color=#229933>// required polymorphic functions inherited from Plugin:</font>
+      InputDomain   getInputDomain          (void) const;
+      OutputList    getOutputDescriptors    (void) const;
+      bool          initialise              (size_t channels, 
+                                             size_t stepsize, 
+                                             size_t blocksize);
+      FeatureSet    process                 (float **inputbufs, 
+                                             Vamp::RealTime timestamp);
+      FeatureSet    getRemainingFeatures    (void);
+      void          reset                   (void);
+
+      <font color=#229933>// optional polymorphic functions from Plugin:</font>
+      size_t        getPreferredStepSize    (void) const;
+      size_t        getPreferredBlockSize   (void) const;
+      <font color=#229933>// size_t     getMinChannelCount      (void) const { return 1; }</font>
+      <font color=#229933>// size_t     getMaxChannelCount      (void) const { return 1; }</font>
+     
+   <font color=#229933>// non-interface functions and variables:</font>
+
+      static void   generateMidiNoteList    (std::vector&lt;std::string&gt;& alist,
+	                                     int minval = 0, int maxval = 127);
+      static void   makeFreqMap             (std::vector&lt;int&gt;& mapping,
+                                             int fftsize, float srate);
+      static void   createMidiSpectrum      (std::vector&lt;double&gt;& midispectrum, 
+                                             std::vector&lt;double&gt;& magspec, 
+                                             double srate);
+      static void   createWorkingSpectrum   (std::vector&lt;double&gt;& magpectrum,
+                                             MazurkaTransformer& transformer, 
+					     double srate, int spectrum_type,
+                                             double smooth);
+      static int    calculateSpectrumSize   (int spectrumType, int blocksize, 
+                                             double srate);
+      static int    calculateMidiSpectrumSize(int transformsize, double srate);
+      static double getMean                 (std::vector&lt;double&gt;& sequence,
+		                             int mmin = -1, int mmax = -1);
+      static double getStandardDeviation    (std::vector&lt;double&gt;& sequence, 
+		                             double mean);
+      static int    localmaximum            (std::vector&lt;double&gt;& data, 
+                                             int target, int minimum, 
+                                             int maximum);
+      static void   findOnsets              (std::vector&lt;Vamp::RealTime&gt;& 
+                                             onset_times, 
+                                             std::vector&lt;double&gt;&
+                                             onset_levels,
+                                             std::vector&lt;double&gt;&
+                                             mean_function,
+                                             std::vector&lt;double&gt;&
+                                             threshold_function,
+                                             std::vector&lt;double&gt;& 
+                                             scaled_function, 
+                                             std::vector&lt;Vamp::RealTime&gt;& 
+                                             functiontimes, 
+                                             double delta, double alpha);
+      static double getSpectralFlux         (std::vector&lt;double&gt;& 
+		                             spectral_derivative, 
+                                             int fluxtype, double pnormorder);
+      static void   smoothSpectrum          (std::vector&lt;double&gt;& sequence, 
+                                             double gain);
+   private: 
+
+      int    mz_slope;         <font color=#229933>// how to calculate the harmonicness of a pitch</font>
+      int    mz_stype;         <font color=#229933>// how to calculate the harmonicness of a pitch</font>
+      double mz_pnorm;         <font color=#229933>// for calculating norm of spectral difference</font>
+      double mz_delta;         <font color=#229933>// local mean threshold for peak identification</font>
+      double mz_alpha;         <font color=#229933>// feedback gain for peak threshold function</font>
+      double mz_smooth;        <font color=#229933>// feedback gain for spectral smoothing</font>
+      
+      std::vector&lt;double&gt;         mz_rawfunction; <font color=#229933>// store SF function for later</font>
+      std::vector&lt;Vamp::RealTime&gt; mz_rawtimes;    <font color=#229933>// times of raw SF function</font>
+       
+      MazurkaTransformer   mz_transformer;  <font color=#229933>// interface FFTW Fourier transforms</font>
+      MazurkaWindower      mz_windower;     <font color=#229933>// interface for windowsing signals</font>
+      std::vector&lt;double&gt;  lastframe;       <font color=#229933>// store the last frame of spectrum</font>
+
+      <font color=#229933>// input parameters:</font>
+      <font color=#229933>//</font>
+      <font color=#229933>//    "method";          -- variant of spectral flux</font>
+      <font color=#229933>//    "windowsamples";   -- number of samples in audio window</font>
+      <font color=#229933>//    "stepsamples";     -- number of samples between window starts</font>
+
+};
+
+
+<font color=#cccccc>#endif <font color=#229933>// _MZSPECTRALFLUX_H_INCLUDED</font></font>
+
+</pre>
+
+
+</td></tr>
+</table>
+</center>
+
+
+
+
+</body>
+</html>
+   

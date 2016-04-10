@@ -1,0 +1,35 @@
+@BEGIN:	SVPLUGIN
+
+@NAME: MzMonoPitch
+@APROPOS: Identifies the most likely pitch for a monophonic signal
+	of a harmonic instrument.
+
+@PARAMETERS:
+
+@OUTPUTS:
+@OUTPUT01: Estimated fundamental frequency of the pitch.
+@OUTPUT02: Estimated quality of the pitch.
+
+@INPUTS: Currently will only measure the power of the first audio channel.
+	If a stereo files is input, the right channel will be ignored.
+
+@DESCRIPTION:  The description of the plugin goes here.
+
+@SEEALSO: <a href=../MzHarmonicSpectrum>MzHarmonicSpectrum</a>
+
+@LIMITATIONS:  Not yet implemented.
+
+@BUGS: 
+
+@BEGIN:	REFERENCES
+@REFERENCE:
+	de la Cuadra, Patricio, Aaron Master and Craig Sapp, 
+	"<a href=http://ccrma.stanford.edu/~craig/papers/01/icmc01-pitch.pdf>Efficient Pitch 
+	Detection Techniques for Interactive Music</a>" in the Proceedings 
+	of the International Computer Music Conference (ICMC) 2001, 
+	Havana, Cuba.  pp. 403-406.
+
+
+@END:	REFERENCES
+
+@END:	SVPLUGIN

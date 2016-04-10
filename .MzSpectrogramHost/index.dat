@@ -1,0 +1,83 @@
+@BEGIN:	SVPLUGIN
+
+@NAME: MzSpectrogramHost
+@APROPOS: Demonstration of how to process spectral data from host applications.
+
+@SUMMARY:
+
+The MzSpectrogramHost plugin demonstrates how to process frequency
+blocks provided by the host application when the polymorphic function
+<a class=function href=src/MzSpectrogramHost.cpp.html#getInputDomain>getInputDomain()</a> returns the value <i>FrequencyDomain</i>.
+
+@PARAMETERS:
+
+@OUTPUTS:
+@OUTPUT01: The magnitude spectrum
+
+@INPUTS: Currently will only measure the power of the first audio channel.
+	If a stereo files is input, the right channel will be ignored.
+
+@DESCRIPTION:  
+
+<p> The frequency bins provided by the host application are interleaved pairs
+of numbers representing the complex values of the spectrum.  The
+even indexed values are the real components of the spectrum and
+the odd  indexed values are the imaginary components.  Negative 
+frequency bins are found in the top of the input data array.
+The following figure shows the basic schematic for the input 
+frequency spectrum.
+
+<center>
+<img src=img/frequencyarray.gif border=0>
+</center>
+
+
+<p>
+MzSpectrogramHost takes this complex spectrum data and
+calculates the <i>magnitude spectrum</i> in the non-interface
+function called <a class=function href=src/MzSpectrogramHost.cpp.html#makeMagnitudeSpectrum>makeMagnitudeSpectrum()</a>.  Note that only the positive
+magnitude spectrum is being calculated, since the source waveform
+is expected to be real-valued.  The magnitude spectrum of the negative
+frequencies is a mirror image of the onse for positive frequencies, and
+therefore does not have any new information about the signal.
+
+<p>The following figure shows three panes from Sonic Visualiser.  The 
+top pane displays the waveform of the audio.  The second pane displays the 
+magnitude spectrum (zoomed from 0 to 1000 Hz) which was created by
+MzSpectrogramHost; and the final pane shows the same spectrogram output
+generated internally in Sonic Visualiser.
+
+<p>
+<center>
+<img src=img/tripane.png border=0>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href=sound/example1.mp4>Click here</a> to listen to the corresponding sound</a>
+</center>
+
+@SEEALSO: 
+
+In order of complexity:
+<ol>
+   <li> MzSpectrogramHost -- described on this page:
+	demonstrates how to receive and process spectral data from 
+        the host application.
+   <li> <a class=link href=../MzSpectrogramHost>MzSpectrogramClient</a> --
+        demonstrates how to generate and process spectral data generated
+        from time data provided by the host application.
+   <li> <a class=link href=../MzSpectrogramFFTW>MzSpectrogramFFTW</a> -- 
+        demonstrates how
+        to do three-to-four times faster Fourier transforms than 
+        MzSpectrgramClient.
+   <li> <a class=link href=../MzNevermore>MzNevermore</a> -- a full-featured
+        Spectrogram display function based on MzSpectrgramFFTW.
+</ol>
+
+@LIMITATIONS: 
+
+@BUGS: 
+
+@BEGIN:	REFERENCES
+@REFERENCE:
+@END:	REFERENCES
+
+@END:	SVPLUGIN

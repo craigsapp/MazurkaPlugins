@@ -1,0 +1,19 @@
+
+.commandname {
+	font-weight:     bold;
+	text-decoration: none;
+	font-size:       125%;
+	color:           #116611;
+}
+
+.program {
+	text-decoration:  none;
+}
+
+
+#contents {
+	width: 650px;
+	margin-bottom: 100px;
+	margin: auto;
+}
+
