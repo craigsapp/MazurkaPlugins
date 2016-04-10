@@ -12,3 +12,4 @@ external/vamp/lib
 src/plugins.cpp
 MzSpectralReflux.cpp
 MzSpectralReflux.h
+_site
