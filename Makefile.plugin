@@ -14,6 +14,7 @@ PLUGINS        += MzChronogram
 PLUGINS        += MzHarmonicSpectrum
 PLUGINS        += MzNevermore
 PLUGINS        += MzPitchPower
+PLUGINS        += MzPitchPower2
 PLUGINS        += MzPowerSpectrogram
 PLUGINS        += MzPowerscape
 PLUGINS        += MzSilenceFinder
