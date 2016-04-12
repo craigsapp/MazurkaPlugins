@@ -1,0 +1,14 @@
+ignore
+err
+*.o
+obj-*
+lib-*
+external/fftw/fftw-*
+external/fftw/include
+external/fftw/lib
+external/vamp/vamp-*
+external/vamp/include
+external/vamp/lib
+src/plugins.cpp
+MzSpectralReflux*
+_site
