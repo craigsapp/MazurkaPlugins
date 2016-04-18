@@ -325,7 +325,7 @@ void genSignal( float* buffer, double freq, int numHarmonics, double sampleRate,
     //declare and fill phaseIncs
     for ( int i = 0; i < numHarmonics; i++){
         phase.push_back(0);
-        amplitude.push_back(1.0/numHarmonics); //probably a simplistic rolloff that should be changed.
+        amplitude.push_back(1.0/(i + 1.0)); //decrease each subsequent higher harmonic by 1/2
         phaseIncrement.push_back(twopi * freq * (i+1) / sampleRate);
     }
     
